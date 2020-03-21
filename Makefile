@@ -24,7 +24,7 @@ RUN = http://ibdhost.com/help/html/
 
 .PHONY: all run clean
 
-all: $(EXE)
+all: clean $(EXE)
 
 run: all
 	@./$(EXE) $(RUN)

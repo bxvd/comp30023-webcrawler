@@ -1,3 +1,5 @@
 obj/
 .DS_Store
 crawler
+*.pdf
+*.txt

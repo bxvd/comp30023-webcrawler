@@ -1,10 +1,19 @@
 #include <stdio.h>
+#include "crawl.h"
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const **argv) {
+
+	// Validate args
+	if (argc != 2) {
+
+		fprintf(stderr, "Usage:\n    %s [URL]\n", argv[0]);
+
+		exit(1);
+	}
 	
-	const char *filename = argv[argc - 1];
+	const char *url = argv[1];
 
-	printf("Fetching %s\n", filename);
+	fprintf(stderr, "Fetching %s\n", url);
 
-	return 0;
+	return crawl(url);
 }
