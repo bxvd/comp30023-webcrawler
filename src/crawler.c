@@ -2,7 +2,7 @@
 
 int main(int argc, char const *argv[]) {
 	
-	const char *filename = argv[1];
+	const char *filename = argv[argc - 1];
 
 	printf("Fetching %s\n", filename);
 
