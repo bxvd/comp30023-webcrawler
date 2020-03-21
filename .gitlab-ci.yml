@@ -7,3 +7,4 @@ before_script:
 test:
     script:
         - ./crawler
+        
