@@ -1,1 +1,1 @@
-int crawl(char *url);
+int crawl(char* url);

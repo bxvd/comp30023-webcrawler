@@ -1,0 +1,1 @@
+char* HTTPGet(char* url);
