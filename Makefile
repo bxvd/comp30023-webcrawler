@@ -1,22 +1,30 @@
+# Adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
+
+# Directories
 SDIR = ./src
 IDIR = ./include
 LDIR = ./lib
 ODIR = ./obj
 
+# Compiler
 CC = gcc
 CFLAGS = -Wall -I$(IDIR)
 
+# Objects
 OBJ := crawler.o
-OBJ := $(ODIR)/$(OBJ)
+OBJ := $(patsubst %, $(ODIR)/%, $(OBJ))
 
+# Output
 EXE = crawler
 
 $(ODIR)/%.o: $(SDIR)/%.c
 	@mkdir $(@D)
-	$(CC) -c -o $@ $< $(CFLAGS)
+	@$(CC) -c -o $@ $< $(CFLAGS)
 
 $(EXE): $(OBJ)
-	$(CC) -o $@ $^ $(CFLAGS)
+	@$(CC) -o $@ $^ $(CFLAGS)
+
+.PHONY: clean
 
 clean:
-	rm -r $(ODIR)
+	@rm -r -f $(ODIR) $(EXE)

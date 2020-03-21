@@ -1,0 +1,9 @@
+image: ubuntu:19.10
+
+before_script:
+    - apt-get -qq update && apt-get install -y -qq gcc make
+    - make clean && make -B
+
+test:
+    script:
+        - ./crawler
