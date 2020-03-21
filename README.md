@@ -13,4 +13,4 @@ The goal of this project is to have the following functionality:
 Brodie Daff
 
 ## Acknowledgements
-* `Markdown` was adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
+* `Makefile` was adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
