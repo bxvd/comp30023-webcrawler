@@ -3,7 +3,7 @@
 
 ## Description
 
-The goal of this project is to have the following functionality:
+The goal is to have implemented the functionality of:
 1. Web crawling
 2. HTTP communication
 3. HTML parsing
