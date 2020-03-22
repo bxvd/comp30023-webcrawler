@@ -1,3 +1,6 @@
 obj/
 .DS_Store
 crawler
+*.pdf
+*.txt
+src/regex.c

@@ -10,10 +10,11 @@ ODIR = ./obj
 CC = gcc
 CFLAGS = -Wall -Wextra -I$(IDIR)
 
-# Objects and source files
-OBJ := crawler.o
-SRC := $(patsubst %.o, $(SDIR)/%.c, $(OBJ))
-OBJ := $(patsubst %, $(ODIR)/%, $(OBJ))
+MKDIR = mkdir -p
+
+# Objects
+OBJ := crawler.o crawl.o http.o url.o
+OBJ := $(OBJ:%=$(ODIR)/%)
 
 # Output
 EXE = crawler
@@ -24,7 +25,7 @@ RUN = http://ibdhost.com/help/html/
 
 .PHONY: all run clean
 
-all: $(EXE)
+all: clean $(EXE)
 
 run: all
 	@./$(EXE) $(RUN)
@@ -32,8 +33,8 @@ run: all
 clean:
 	@rm -r -f $(ODIR) $(EXE)
 
-$(OBJ): $(SRC)
-	@mkdir $(@D)
+$(ODIR)/%.o: $(SDIR)/%.c
+	@$(MKDIR) $(@D)
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
 $(EXE): $(OBJ)
