@@ -8,20 +8,26 @@
 #define ACCEPT     "text/html"
 #define HTTP       "HTTP/1.1"
 
-#define MAX_CONTENT_LENGTH 100000
+#define MAX_URL_LENGTH     1000
+#define MAX_REQUEST_LENGTH 1000
 
-char* http_get(char* url) {
+#define INVALID_URL -1
 
-	char* request = (char*)malloc(1000 * sizeof(char));
-	char* response = (char*)malloc(MAX_CONTENT_LENGTH * sizeof(char));
-	char* protocol = HTTP;
+int http_get(char *url, char *response) {
 
-	// Get URL struct of the url string
-	URL* _url = parse_url(url);
+	int status = 0;
+	char *request = (char*)malloc(MAX_REQUEST_LENGTH * sizeof(char));
+	char *protocol = HTTP;
+	
+	// Parse url string to URL struct
+	URL *_url = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
+	int valid_url = !parse_url(url, _url);
 
-	// Handle other protocols
-	if (strcmp(_url->protocol, "http")) {
-		// Not currently required
+	if (!valid_url) {
+		
+		free(_url);
+
+		return INVALID_URL;
 	}
 
 	// Generate request header
@@ -31,7 +37,10 @@ char* http_get(char* url) {
 		_url->path, protocol, _url->host, CONNECTION, USER_AGENT, ACCEPT
 	);
 
+	response = NULL;
+
 	free(_url);
 
-	return request;
+	// Just return request until implementation is ready
+	return status;
 }

@@ -1,8 +1,8 @@
 typedef struct URL {
-	char* path;
-	char* host;
-	char* protocol;
+	char *path;
+	char *host;
+	char *protocol;
 } URL;
 
-URL* parse_url(char* url);
-char* stringify_url(char* path, ...);
+int parse_url(char *url, URL *url_t);
+char *stringify_url(int n, char *path, ...);
