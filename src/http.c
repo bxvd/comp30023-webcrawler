@@ -8,17 +8,20 @@
 #define ACCEPT     "text/html"
 #define HTTP       "HTTP/1.1"
 
+#define MAX_CONTENT_LENGTH 100000
+
 char* http_get(char* url) {
 
 	char* request = (char*)malloc(1000 * sizeof(char));
-	char* protocol = "";
+	char* response = (char*)malloc(MAX_CONTENT_LENGTH * sizeof(char));
+	char* protocol = HTTP;
 
 	// Get URL struct of the url string
 	URL* _url = parse_url(url);
 
-	// Get header request ver of protocol
-	if (!strcmp(_url->protocol, "http")) {
-		protocol = HTTP;
+	// Handle other protocols
+	if (strcmp(_url->protocol, "http")) {
+		// Not currently required
 	}
 
 	// Generate request header
