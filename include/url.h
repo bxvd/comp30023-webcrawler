@@ -1,6 +1,8 @@
-extern const int MAX_URL_LENGTH;
+typedef struct URL {
+	char* path;
+	char* host;
+	char* protocol;
+} URL;
 
-typedef struct url_t URL;
-
-URL parseURL(const char* url);
-char* stringifyURL(char* path, ...);
+URL* parse_url(char* url);
+char* stringify_url(char* path, ...);

@@ -3,18 +3,29 @@
 #include <string.h>
 #include "crawl.h"
 
+#define ARGS_REQUIRED 2
+
+/*
+ * Function: validate_args
+ * 
+ * Ensures correct command line args are passed.
+ * 
+ * int argc:          main's argc.
+ * const char** argv: main's argv.
+ */
+void validate_args(int argc, const char** argv) {
+
+	if (argc != ARGS_REQUIRED) {
+		fprintf(stderr, "Wrong number of args passed.\n");
+		fprintf(stderr, "Usage:\n    %s [URL]\n", argv[0]);
+	}
+}
+
 int main(int argc, const char** argv) {
 
-	// Validate args
-	if (argc != 2) {
-
-		fprintf(stderr, "Usage:\n    %s [URL]\n", argv[0]);
-
-		exit(1);
-	}
+	validate_args(argc, argv);
 	
-	char* url = "";
-	strcpy(url, argv[1]);
+	char* url = (char*)argv[1];
 
 	return crawl(url);
 }

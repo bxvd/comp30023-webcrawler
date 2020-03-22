@@ -3,11 +3,11 @@
 
 int crawl(char* url) {
 
-	// GET request
-	char* response = HTTPGet(url);
+	// Make GET request
+	char* response = http_get(url);
 
 	// Look at response
-	fprintf(stderr, "%s", response);
+	//fprintf(stderr, "Response:\n	%s\n", response);
 
 	return 0;
 }

@@ -1,1 +1,1 @@
-char* HTTPGet(char* url);
+char* http_get(char* url);
