@@ -7,7 +7,7 @@ int crawl(char* url) {
 	char* response = http_get(url);
 
 	// Look at response
-	//fprintf(stderr, "Response:\n	%s\n", response);
+	fprintf(stderr, "Response:\n%s\n", response);
 
 	return 0;
 }
