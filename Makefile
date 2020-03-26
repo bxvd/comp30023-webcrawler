@@ -13,7 +13,7 @@ CFLAGS = -Wall -Wextra -I$(IDIR)
 MKDIR = mkdir -p
 
 # Objects
-OBJ := crawler.o crawl.o http.o url.o
+OBJ := crawler.o crawl.o http.o url.o client.o
 OBJ := $(OBJ:%=$(ODIR)/%)
 
 # Output
