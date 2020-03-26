@@ -2,28 +2,47 @@
 #include <stdlib.h>
 #include <string.h>
 #include "url.h"
+#include "client.h"
 
 #define USER_AGENT "bdaff"
 #define CONNECTION "keep-alive"
 #define ACCEPT     "text/html"
 #define HTTP       "HTTP/1.1"
+#define PORT       80
 
-#define MAX_URL_LENGTH     1000
-#define MAX_REQUEST_LENGTH 1000
+#define END_OF_HEADER "\r\n\r\n"
 
-#define INVALID_URL -1
+#define MAX_URL_LENGTH    1000
+#define MAX_HEADER_LENGTH 256
+
+#define INVALID_URL      -4
+#define INVALID_RESPONSE -5
+
+int parse_header(char *response) {
+
+	// Find pointer to end-of-header marker
+	char *end = strstr(response, END_OF_HEADER);
+
+	if (end == NULL) {
+		return INVALID_RESPONSE;
+	}
+
+	// Extract the HTTP status
+	char status[3];
+	strncpy(status, strchr(response, ' '), sizeof(status));
+
+	return atoi(status);
+}
 
 int http_get(char *url, char *response) {
 
-	int status = 0;
-	char *request = (char*)malloc(MAX_REQUEST_LENGTH * sizeof(char));
-	char *protocol = HTTP;
+	char header[MAX_HEADER_LENGTH];
+	memset(header, 0, MAX_HEADER_LENGTH);
 	
-	// Parse url string to URL struct
+	// Parse url string
 	URL *_url = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
-	int valid_url = !parse_url(url, _url);
 
-	if (!valid_url) {
+	if (parse_url(url, _url)) {
 		
 		free(_url);
 
@@ -31,16 +50,16 @@ int http_get(char *url, char *response) {
 	}
 
 	// Generate request header
-	sprintf(
-		request,
-		"GET %s %s\nHost: %s\nConnection: %s\nUser-Agent: %s\nAccept: %s\n",
-		_url->path, protocol, _url->host, CONNECTION, USER_AGENT, ACCEPT
+	snprintf(
+		header,
+		sizeof(header),
+		"GET %s %s\r\nHost: %s\r\nConnection: %s\r\nCache-Control: max-age=0\r\nUser-Agent: %s\r\nAccept: %s\r\n\r\n",
+		_url->path, HTTP, _url->host, CONNECTION, USER_AGENT, ACCEPT
 	);
 
-	response = NULL;
+	int errcode = request(_url->host, PORT, header, response);
 
 	free(_url);
 
-	// Just return request until implementation is ready
-	return status;
+	return (errcode ? errcode : parse_header(response));
 }

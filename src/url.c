@@ -100,9 +100,9 @@ int parse_url(char *url, URL *url_t) {
  * Generates a valid URL string.
  * 
  *            int n:          Number of url arguments passed.
- *            char *path:     Path to resource (i.e. '/a/b.html', 'google.com/a/b.html' or 'http://google.com/a/b.html').
- * (optional) char *host:     Hostname (i.e. 'google.com').
- * (optional) char *protocol: Protocol to be used ('http' by default).
+ *            char *path:     Path to resource (or the hostname if no path).
+ * (optional) char *host:     Hostname.
+ * (optional) char *protocol: Protocol to be used ('http' if none provided).
  * 
  * returns char*: A URL string.
  */
