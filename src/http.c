@@ -10,56 +10,152 @@
 #define HTTP       "HTTP/1.1"
 #define PORT       80
 
-#define END_OF_HEADER "\r\n\r\n"
+#define CONTENT_LENGTH "Content-Length: "
+#define CRLFCRLF       "\r\n\r\n"
+#define CRLF           "\r\n"
 
-#define MAX_URL_LENGTH    1000
-#define MAX_HEADER_LENGTH 256
+#define MAX_URL_LENGTH      1000
+#define MAX_HEADER_LENGTH   256
+#define MAX_RESPONSE_LENGTH 100000
 
-#define INVALID_URL      -4
-#define INVALID_RESPONSE -5
+#define CHUNKED -1
 
-int parse_header(char *response) {
+#define INVALID_URL      -5
+#define INVALID_RESPONSE -6
 
-	// Find pointer to end-of-header marker
-	char *end = strstr(response, END_OF_HEADER);
+/*
+ * Function: parse_header
+ * 
+ * Handles the HTTP response header from the server.
+ * 
+ * char *response: Server response.
+ * 
+ * Returns int: HTTP status code.
+ */
+int parse_header(char *response, long *content_length) {
 
-	if (end == NULL) {
-		return INVALID_RESPONSE;
-	}
+	// Extract content length or handle as chunked transfer
+	*content_length = strstr(response, CONTENT_LENGTH) == NULL ?
+										CHUNKED :
+										atol(strstr(response, CONTENT_LENGTH) + strlen(CONTENT_LENGTH));
 
-	// Extract the HTTP status
-	char status[3];
-	strncpy(status, strchr(response, ' '), sizeof(status));
-
-	return atoi(status);
+	// Extract status code
+	return atoi(strchr(response, ' ') + 1);
 }
 
+long get_chunk_length(int sockfd) {
+
+	char buffer[BUFFER_LENGTH];
+
+	read_response(sockfd, buffer, CRLF, 1);
+
+	fprintf(stderr, "Chunk head buffer: %s\n", buffer);
+
+	return strtol(buffer, NULL, 16);
+}
+
+long get_chunked_response(int sockfd, char *response, long *expected_length) {
+
+	fprintf(stderr, "Chunked transfer mode.\n\n");
+
+	long next_read;
+	*expected_length = 0;
+
+	// Get chunk length
+	next_read = get_chunk_length(sockfd);
+	*expected_length += next_read;
+
+	long bytes_read = 0;
+	while (next_read) {
+
+		fprintf(stderr, "Chunk size: %ld\n", next_read);
+
+		bytes_read += read_response(sockfd, response + bytes_read, CRLF, next_read);\
+
+		// Get chunk length
+		next_read = get_chunk_length(sockfd);
+		*expected_length += next_read;
+
+		fprintf(stderr, "Bytes read: %ld, next read: %ld\n", bytes_read, next_read);
+	}
+
+	return bytes_read;
+}
+
+/*
+ * Function: http_get
+ * 
+ * Generates a HTTP GET header and captures the response.
+ * 
+ * char *url:      URL string of server.
+ * char *response: Pointer to the location of where to put the response.
+ * 
+ * Returns int: HTTP status code or error code.
+ */
 int http_get(char *url, char *response) {
 
-	char header[MAX_HEADER_LENGTH];
+	// Setup memory
+	response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
+	URL *_url = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
+	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
+	int sockfd, status;
+	long bytes_read, expected_length;
+
+	memset(response, 0, MAX_RESPONSE_LENGTH);
+	memset(_url, 0, MAX_URL_LENGTH);
 	memset(header, 0, MAX_HEADER_LENGTH);
 	
 	// Parse url string
-	URL *_url = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
-
-	if (parse_url(url, _url)) {
+	if (parse_url(url, _url) < 0) {
 		
 		free(_url);
-
 		return INVALID_URL;
 	}
 
 	// Generate request header
 	snprintf(
 		header,
-		sizeof(header),
+		MAX_HEADER_LENGTH,
 		"GET %s %s\r\nHost: %s\r\nConnection: %s\r\nCache-Control: max-age=0\r\nUser-Agent: %s\r\nAccept: %s\r\n\r\n",
 		_url->path, HTTP, _url->host, CONNECTION, USER_AGENT, ACCEPT
 	);
 
-	int errcode = request(_url->host, PORT, header, response);
-
+	// Send HTTP request to server
+	sockfd = establish(_url->host, PORT, header);
 	free(_url);
+	free(header);
 
-	return (errcode ? errcode : parse_header(response));
+	fprintf(stderr, "HTTP connection established.\n");
+
+	// Get response header
+	bytes_read = read_response(sockfd, response, CRLFCRLF, 1);
+
+	if (bytes_read < 0) {
+		return (int)bytes_read;
+	}
+
+	// Get response header
+	status = parse_header(response, &expected_length);
+
+	if (status < 0) {
+		return status;
+	}
+
+	fprintf(stderr, "Status: %d\n", status);
+
+	// Reset response data
+	memset(response, 0, MAX_RESPONSE_LENGTH);
+
+	// Read content from server
+	bytes_read = expected_length == CHUNKED ?
+								get_chunked_response(sockfd, response, &expected_length) :
+								read_response(sockfd, response, NULL, expected_length);
+
+	fprintf(stderr, "\nExpected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+
+	close_socket(sockfd);
+
+	fprintf(stderr, "Connection closed.\n");
+
+	return status;
 }

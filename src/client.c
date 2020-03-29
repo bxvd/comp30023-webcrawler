@@ -7,11 +7,23 @@
 #include <unistd.h>
 #include <strings.h>
 #include "url.h"
-#define BUFFER_SIZE 256
 
-#define SERVER_NOT_FOUND -1
-#define SOCKET_ERROR     -2
-#define CONNECTION_ERROR -3
+#define BUFFER_LENGTH 1024
+
+#define HEADER_MODE 1
+
+#define SERVER_NOT_FOUND  -1
+#define SOCKET_ERROR      -2
+#define CONNECTION_ERROR  -3
+#define SERVER_READ_ERROR -4
+
+long min(long a, long b) {
+	return a < b ? a : b;
+}
+
+long max(long a, long b) {
+	return a > b ? a : b;
+}
 
 /*
  * Function: setup_socket
@@ -54,19 +66,7 @@ int setup_socket(struct hostent *addr, int port) {
 	return sockfd;
 }
 
-/*
- * Function: request
- * 
- * Performs a request over IP and reads data from the server.
- * 
- * char *host:     Destination hostname.
- * int port:       Destination port number.
- * char *header:   A complete request header.
- * char *response: Pointer to where the server's response is to be copied to.
- * 
- * Returns int Error code or 0 if successful.
- */
-int request(char *host, int port, char *header, char *response) {
+int establish(char *host, int port, char *header) {
 
 	// Get IP address from host name
 	struct hostent *addr = gethostbyname(host);
@@ -74,9 +74,6 @@ int request(char *host, int port, char *header, char *response) {
 	if (addr == NULL) {
 		return SERVER_NOT_FOUND;
 	}
-
-	char buffer[BUFFER_SIZE];
-	memset(buffer, 0, BUFFER_SIZE);
 
 	int sockfd = setup_socket(addr, port);
 
@@ -88,16 +85,99 @@ int request(char *host, int port, char *header, char *response) {
 	// Send request header
 	write(sockfd, header, strlen(header));
 
-	// Read data from server
-	int i = 0;
-	for (i = 0; read(sockfd, buffer, BUFFER_SIZE - 1); i += (BUFFER_SIZE - 1)) {
+	return sockfd;
+}
 
-		memmove(&response[i], buffer, BUFFER_SIZE);
-		memset(buffer, 0, BUFFER_SIZE);
+long read_response(int sockfd, char *response, char *boundary, long content_length) {
+
+	long bytes_read = 0, buffer_length = min(BUFFER_LENGTH, content_length);
+	content_length = content_length == HEADER_MODE ? BUFFER_LENGTH : content_length;
+
+	fprintf(stderr, "Reading %ld @ %ld\n", content_length, buffer_length);
+
+	while (bytes_read < content_length) {
+
+		bytes_read += read(sockfd, response + bytes_read, buffer_length);
+		
+		if ((bytes_read >= (long)strlen(boundary)) && (strstr(response, boundary) != NULL)) {
+			fprintf(stderr, "Boundary reached.\n");
+			return bytes_read;
+		}
+
+		buffer_length = min(buffer_length, content_length - bytes_read);
 	}
+
+	fprintf(stderr, "Bytes read %ld\n", bytes_read);
+
+	return bytes_read;
+}
+
+void close_socket(int sockfd) {
+	close(sockfd);
+}
+
+/*
+ * Function: request
+ * 
+ * Performs a request over IP and reads data from the server.
+ * 
+ * char *host:     Destination hostname.
+ * int port:       Destination port number.
+ * char *header:   A complete request header.
+ * char *response: Pointer to where the server's response is to be copied to.
+ * 
+ * Returns int Error code or 0 if successful.
+ *
+int request(char *host, int port, char *header, char *response, size_t length) {
+
+	// Get IP address from host name
+	struct hostent *addr = gethostbyname(host);
+
+	if (addr == NULL) {
+		return SERVER_NOT_FOUND;
+	}
+
+	// char buffer[max];
+	// memset(buffer, 0, max);
+
+	int sockfd = setup_socket(addr, port);
+
+	// Problem setting up socket
+	if (sockfd < 0) {
+		return sockfd;
+	}
+
+	// Send request header
+	write(sockfd, req_header, strlen(req_header));
+
+	// Read data from server
+
+	char *res_header = get_header(sockfd);
+
+	// size_t bytes_read = 0;
+	// while (bytes_read < max_length) {
+
+	// 	long bytes_received = read(sockfd, response + bytes_read, max_length - bytes_read);
+
+	// 	if (bytes_received < 0) {
+	// 		return SERVER_READ_ERROR;
+	// 	}
+
+	// 	bytes_read += bytes_received;
+	// }
+
+
+	//size_t bytes_read;
+	//for (long bytes_read = 0; bytes_read < max; bytes_read += read(sockfd, response + bytes_read, max - bytes_read));
+
+	// for (i = 0; read(sockfd, buffer, BUFFER_SIZE - 1); i += (BUFFER_SIZE - 1)) {
+
+	// 	memmove(&response[i], buffer, BUFFER_SIZE);
+	// 	memset(buffer, 0, BUFFER_SIZE);
+	// }
 
 	// Close connection
 	close(sockfd);
 
 	return 0;
-}
+}*/

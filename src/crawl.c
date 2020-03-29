@@ -3,18 +3,23 @@
 #include <string.h>
 #include "http.h"
 
-#define MAX_RESPONSE_LENGTH 100000
-
 int crawl(char *url) {
 
-	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
-	memset(response, 0, MAX_RESPONSE_LENGTH);
+	char *response = NULL;
 
 	// Make GET request
 	int status = http_get(url, response);
 
-	// Look at response
+	if (status < 0) {
+
+		free(response);
+
+		return status;
+	}
+
 	//fprintf(stderr, "Status: %d\nResponse:\n%s\n", status, response);
+
+	free(response);
 
 	return 0;
 }

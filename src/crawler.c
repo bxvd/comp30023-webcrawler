@@ -5,6 +5,8 @@
 
 #define ARGS_REQUIRED 2
 
+#define ARGS_ERROR 1
+
 /*
  * Function: validate_args
  * 
@@ -18,6 +20,8 @@ void validate_args(int argc, const char** argv) {
 	if (argc != ARGS_REQUIRED) {
 		fprintf(stderr, "Wrong number of args passed.\n");
 		fprintf(stderr, "Usage:\n    %s [URL]\n", argv[0]);
+
+		exit(ARGS_ERROR);
 	}
 }
 
