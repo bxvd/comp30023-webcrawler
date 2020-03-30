@@ -1,31 +1,34 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <unistd.h>
-#include <strings.h>
 #include "url.h"
-#define BUFFER_SIZE 256
 
-#define SERVER_NOT_FOUND -1
-#define SOCKET_ERROR     -2
-#define CONNECTION_ERROR -3
+#define BUFFER_LENGTH 1024
+
+#define HEADER_MODE 1
+
+#define SERVER_NOT_FOUND  -1
+#define SOCKET_ERROR      -2
+#define CONNECTION_ERROR  -3
+#define SERVER_READ_ERROR -4
 
 /*
  * Function: setup_socket
  * 
  * Performs logic to establish an IP connection via sockets.
  * 
+ * int *sockfd:          Socket file descriptor.
  * struct hostent *addr: Parsed destination IP address.
  * int port:             Destination port number.
- * 
- * Returns int: Socket file descriptor or error code.
  */
-int setup_socket(struct hostent *addr, int port) {
+void setup_socket(int *sockfd, struct hostent *addr, int port) {
 
-	int sockfd;
 	struct sockaddr_in server_addr;
 
 	// Prepare address data structure
@@ -40,64 +43,100 @@ int setup_socket(struct hostent *addr, int port) {
 	// Set port
 	server_addr.sin_port = htons(port);
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	*sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (sockfd < 0) {
-		return SOCKET_ERROR;
+	if (*sockfd < 0) {
+		*sockfd = SOCKET_ERROR;
+		return;
 	}
 
 	// Set up connection
-	if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-		return CONNECTION_ERROR;
+	if (connect(*sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+		*sockfd = CONNECTION_ERROR;
+		return;
 	}
-
-	return sockfd;
 }
 
 /*
- * Function: request
+ * Function: establish
  * 
- * Performs a request over IP and reads data from the server.
+ * Establishes a connection with a server.
  * 
- * char *host:     Destination hostname.
- * int port:       Destination port number.
- * char *header:   A complete request header.
- * char *response: Pointer to where the server's response is to be copied to.
+ * char *host:   Server hostname.
+ * int port:     Destination port number.
+ * char *header: Request header.
  * 
- * Returns int Error code or 0 if successful.
+ * Returns int*: Pointer to a socket file descriptor.
  */
-int request(char *host, int port, char *header, char *response) {
+int *establish(char *host, int port, char *header) {
+
+	// Persistent sockfd to keep socket open
+	int *sockfd = (int*)malloc(sizeof(int));
 
 	// Get IP address from host name
 	struct hostent *addr = gethostbyname(host);
 
 	if (addr == NULL) {
-		return SERVER_NOT_FOUND;
+		*sockfd = SERVER_NOT_FOUND;
+		return sockfd;
 	}
 
-	char buffer[BUFFER_SIZE];
-	memset(buffer, 0, BUFFER_SIZE);
-
-	int sockfd = setup_socket(addr, port);
+	setup_socket(sockfd, addr, port);
 
 	// Problem setting up socket
-	if (sockfd < 0) {
+	if (*sockfd < 0) {
 		return sockfd;
 	}
 
 	// Send request header
-	write(sockfd, header, strlen(header));
+	write(*sockfd, header, strlen(header));
 
-	// Read data from server
-	int i = 0;
-	for (i = 0; read(sockfd, buffer, BUFFER_SIZE - 1); i += (BUFFER_SIZE - 1)) {
+	return sockfd;
+}
 
-		memmove(&response[i], buffer, BUFFER_SIZE);
-		memset(buffer, 0, BUFFER_SIZE);
+/*
+ * Function: read_response
+ * 
+ * Reads bytes from a server via sockets.
+ * 
+ * int *sockfd:         Socket file descriptor.
+ * char *response:      String to store the bytes read from the server.
+ * char *boundary:      Stops reading bytes if it encounters a 'boundary' string until the function is called again.
+ * long content_length: Maximum number of bytes to read from the server.
+ * 
+ * Returns long: Length of data read in bytes.
+ */
+long read_response(int *sockfd, char *response, char *boundary, long content_length) {
+
+	/*
+	 * Function is in header mode when content_length = 1.
+	 * Reads one byte at a time until 'boundary' is encountered so as to precisely capture data.
+	 */
+
+	// Set buffer length based on expected length
+	long bytes_read = 0, buffer_length = content_length;
+
+	content_length = content_length == HEADER_MODE ? BUFFER_LENGTH : content_length;
+
+	while (bytes_read < content_length) {
+
+		bytes_read += read(*sockfd, response + bytes_read, buffer_length);
+		
+		// Check if a boundary string has been encountered
+		if ((bytes_read >= (long)strlen(boundary)) && (strstr(response, boundary) != NULL)) {
+			return bytes_read;
+		}
 	}
 
-	// Close connection
-	close(sockfd);
+	return bytes_read;
+}
 
-	return 0;
+/*
+ * Function: close_socket
+ * 
+ * int *sockfd: Socket file descriptor.
+ */
+void close_socket(int *sockfd) {
+	close(*sockfd);
+	free(sockfd);
 }

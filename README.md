@@ -4,9 +4,9 @@
 ## Description
 The goal is to have implemented the functionality of:
 1. Web crawling
-2. HTTP communication
+2. ~~TCP communication~~
 3. HTML parsing
-4. URL parsing
+4. ~~URL parsing~~
 
 ### Usage
 `crawler [URL]`
