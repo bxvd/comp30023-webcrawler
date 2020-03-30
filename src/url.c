@@ -9,23 +9,18 @@ typedef struct URL {
 	char *protocol;
 } URL;
 
-// Constants for finding substrings based on URL assumptions
-#define URL_PROTOCOL_END 4
-#define URL_HOST_START   7
-
 #define INVALID_PATH_CHARS "?#%"
-#define MIN_HOST_LENGTH    3
+#define DEFAULT_PROTOCOL   "http"
+#define DEFAULT_PATH       "/"
+#define PROTOCOL_DELIMITER "://"
+#define HOST_DELIMITER     "/"
 
-// Error codes
-#define INVALID_PROTOCOL   1
-#define INVALID_HOST       2
-#define INVALID_PATH       3
-#define INVALID_URL        4
+#define INVALID_URL -7
 
 /*
  * Function: parse_url
  * 
- * Parses a URL string into a struct to be used in request headers.
+ * Parses a URL string into a struct to be used in request headers. Assumes a valid URL is passed in.
  * 
  * char *url:   URL string to be parsed.
  * char *url_t: struct that will be populated with the elements of the URL.
@@ -34,64 +29,42 @@ typedef struct URL {
  */
 int parse_url(char *url, URL *url_t) {
 
-	/*
-	 * Assumption:
-	 * 	url will only contain strings of the format 'http://<host><path>'
-	 */
+	char *element_start = url, *element_end = NULL;
+	int element_length;
 
-	// Validity check on URL length
-	if (strlen(url) <= URL_HOST_START) {
+	// Get protocol
+	element_end = strstr(url, PROTOCOL_DELIMITER);
 
-		fprintf(stderr, "Invalid URL\n");
+	if (element_end == NULL) {
 
-		return INVALID_URL;
+		element_length = strlen(DEFAULT_PROTOCOL);
+		element_start = DEFAULT_PROTOCOL;
+		element_end = url;
+	} else {
+
+		element_length = element_end - element_start;
+		element_end += strlen(PROTOCOL_DELIMITER);
 	}
 
-	// Get protocol substring
-	url_t->protocol = (char*)malloc(URL_PROTOCOL_END * sizeof(char));
-	strncpy(url_t->protocol, url, URL_PROTOCOL_END);
+	url_t->protocol = (char*)malloc(element_length * sizeof(char));
+	memmove(url_t->protocol, element_start, element_length);
 
-	// Validity check on protocol
-	if (strcmp(url_t->protocol, "http")) {
+	// Get host
+	element_start = element_end;
+	element_end = strstr(element_start, HOST_DELIMITER);
+	element_length = element_end == NULL ? strlen(element_start) : element_end - element_start;
 
-		fprintf(stderr, "Invalid protocol\n");
+	url_t->host = (char*)malloc(element_length * sizeof(char));
+	memmove(url_t->host, element_start, element_length);
 
-		return INVALID_PROTOCOL;
-	}
+	// Get path
+	element_start = element_end == NULL ? DEFAULT_PATH : element_end;
+	element_length = strlen(element_start);
 
-	// Get path substring
-	char *path = strchr(url + URL_HOST_START, '/');
-	// No-path case
-	path = path == NULL ? "/" : path;
-
-	// Validity check on path form
-	// The specified ignore cases are simple enough to avoid using regex
-	for (int i = 0; i < (int)strlen(INVALID_PATH_CHARS); i++) {
-		if (strchr(path, INVALID_PATH_CHARS[i])) {
-			return INVALID_PATH;
-		}
-	}
-
-	// Validity check on relative directories (./, ../) in path
-	for (int i = 0; i < (int)strlen(path); i++) {
-		if (path[i] == '.' && path[i + 1] == '/') {
-			return INVALID_PATH;
-		}
-	}
-
-	url_t->path = (char*)malloc(sizeof(*path));
-	strcpy(url_t->path, path);
-
-	/*
-	 * Given validation cases above and project specifications, no host validation required.
-	 */
-
-	// Get host substring
-	int host_len = (int)(path - url - URL_HOST_START);
-	url_t->host = (char*)malloc(host_len * sizeof(char));
-	strncpy(url_t->host, (url + URL_HOST_START), host_len);
-
-	return 0;
+	url_t->path = (char*)malloc(element_length * sizeof(char));
+	memmove(url_t->path, element_start, element_length);
+	
+	return (url_t->protocol == NULL || url_t->host == NULL || url_t->path == NULL) ? INVALID_URL : 0;
 }
 
 /*

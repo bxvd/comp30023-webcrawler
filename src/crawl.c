@@ -1,25 +1,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "url.h"
 #include "http.h"
 
-int crawl(char *url) {
+#define MAX_RESPONSE_LENGTH 100000
 
-	char *response = NULL;
+int crawl(const char *url) {
+
+	FILE *output = fopen("response.html", "w");
+	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
+	char* _url = (char*)malloc(strlen(url) * sizeof(char));
+	memmove(_url, url, strlen(url));
+
+	fprintf(stderr, "Starting crawl.\n");
 
 	// Make GET request
-	int status = http_get(url, response);
+	int status = http_get(_url, response);
 
-	if (status < 0) {
-
-		free(response);
-
-		return status;
-	}
-
-	//fprintf(stderr, "Status: %d\nResponse:\n%s\n", status, response);
+	fprintf(output, "%s", response);
 
 	free(response);
+	fclose(output);
+
+	fprintf(stderr, "Crawl finished.\n");
 
 	return 0;
 }

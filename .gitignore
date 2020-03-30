@@ -3,4 +3,5 @@ obj/
 crawler
 *.pdf
 *.txt
+*.html
 src/regex.c

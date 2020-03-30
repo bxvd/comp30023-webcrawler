@@ -28,8 +28,6 @@ void validate_args(int argc, const char** argv) {
 int main(int argc, const char** argv) {
 
 	validate_args(argc, argv);
-	
-	char* url = (char*)argv[1];
 
-	return crawl(url);
+	return crawl(argv[1]);
 }
