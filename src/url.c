@@ -25,9 +25,14 @@ typedef struct URL {
  * char *url:   URL string to be parsed.
  * char *url_t: struct that will be populated with the elements of the URL.
  * 
- * returns int: flag indicating validity of the URL string.
+ * returns int: Error code.
  */
 int parse_url(char *url, URL *url_t) {
+
+	/*
+	 * Code below is just manouvering of pointers to substrings of the URL to get
+	 * its elements, and copy the bytes into the struct.
+	 */
 
 	char *element_start = url, *element_end = NULL;
 	int element_length;
