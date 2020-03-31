@@ -25,7 +25,7 @@ typedef struct URL {
  * char *url:   URL string to be parsed.
  * char *url_t: struct that will be populated with the elements of the URL.
  * 
- * returns int: Error code.
+ * Returns int: Error code.
  */
 int parse_url(char *url, URL *url_t) {
 
@@ -82,7 +82,7 @@ int parse_url(char *url, URL *url_t) {
  * (optional) char *host:     Hostname.
  * (optional) char *protocol: Protocol to be used ('http' if none provided).
  * 
- * returns char*: A URL string.
+ * returns char*: URL string.
  */
 char *stringify_url(int n, char *path, ...) {
 

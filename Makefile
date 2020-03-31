@@ -23,14 +23,18 @@ EXE = crawler
 
 # Runtime args
 # Used for debugging
-RUN = http://ibdhost.com/help/html/
+TEST1 = http://ibdhost.com/help/html/
+TEST2 = google.com
 
 .PHONY: all run clean
 
 all: clean $(EXE)
 
-run: all
-	@./$(EXE) $(RUN)
+test1: all
+	@./$(EXE) $(TEST1)
+
+test2: all
+	@./$(EXE) $(TEST2)
 
 clean:
 	@rm -r -f $(ODIR) $(EXE)
