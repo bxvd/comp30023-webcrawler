@@ -25,6 +25,7 @@ EXE = crawler
 # Used for debugging
 TEST1 = http://ibdhost.com/help/html/
 TEST2 = google.com
+TEST3 = https://webhook.site/a6e635ec-e82e-4ef8-b94c-20820b1d823e
 
 .PHONY: all run clean
 
@@ -35,6 +36,9 @@ test1: all
 
 test2: all
 	@./$(EXE) $(TEST2)
+
+test3: all
+	@./$(EXE) $(TEST3)
 
 clean:
 	@rm -r -f $(ODIR) $(EXE)

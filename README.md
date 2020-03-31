@@ -16,3 +16,5 @@ Brodie Daff
 
 ## Acknowledgements
 * `Makefile` was adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
+* `client.c` was adapted from COMP30023 workshop 4.
+* Uses [Gumbo HTML Parser](github.com/google/gumbo-parser) by Google.

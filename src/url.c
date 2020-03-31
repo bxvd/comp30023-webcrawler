@@ -9,13 +9,12 @@ typedef struct URL {
 	char *protocol;
 } URL;
 
-#define INVALID_PATH_CHARS "?#%"
 #define DEFAULT_PROTOCOL   "http"
 #define DEFAULT_PATH       "/"
 #define PROTOCOL_DELIMITER "://"
 #define HOST_DELIMITER     "/"
 
-#define INVALID_URL -7
+#define INVALID_URL -5
 
 /*
  * Function: parse_url

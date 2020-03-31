@@ -1,27 +1,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "http.h"
 #include "url.h"
 #include "client.h"
 
+// HTTP configuration
 #define USER_AGENT "bdaff"
 #define CONNECTION "keep-alive"
 #define ACCEPT     "text/html"
 #define HTTP_VER   "HTTP/1.1"
 #define PORT       80
 
+// Search strings
 #define CONTENT_LENGTH  "Content-Length: "
 #define LOCATION        "Location: "
 #define HEADER_BOUNDARY "\r\n\r\n"
 #define END_OF_LINE     "\r\n"
 
+// Memory allocations
 #define MAX_URL_LENGTH      1000
 #define MAX_HEADER_LENGTH   256
 #define MAX_RESPONSE_LENGTH 100000
+#define CHUNK_HEADER_LENGTH 10
 
-#define CHUNKED -1
-
-#define INVALID_URL      -5
+// Flags
+#define CHUNKED          -1
 #define INVALID_RESPONSE -6
 
 /*
@@ -64,6 +68,8 @@ void get_location(char *url, char *response) {
 
 	char *location = strstr(response, LOCATION) + strlen(LOCATION);
 	memmove(url, location, strstr(location, END_OF_LINE) - location);
+
+	fprintf(stderr, "Redirect to: %s\n", url);
 }
 
 /*
@@ -81,9 +87,9 @@ long get_chunk_length(int *sockfd) {
 	 * Chunk headers are expressed as a hex string terminated by \r\n.
 	 */
 
-	char buffer[BUFFER_LENGTH] = "";
+	char buffer[CHUNK_HEADER_LENGTH];
 
-	read_response(sockfd, buffer, END_OF_LINE, 1);
+	read_response(sockfd, buffer, END_OF_LINE, HEADER_MODE);
 
 	return strtol(buffer, NULL, 16);
 }
@@ -101,7 +107,7 @@ long get_chunk_length(int *sockfd) {
  */
 long get_chunked_response(int *sockfd, char *response, long *expected_length) {
 
-	fprintf(stderr, "Chunked transfer.\n");
+	fprintf(stderr, "Begin chunked transfer.\n");
 
 	long next_read, bytes_read = 0;
 	*expected_length = 0;
@@ -111,7 +117,7 @@ long get_chunked_response(int *sockfd, char *response, long *expected_length) {
 
 	while (next_read) {
 
-		fprintf(stderr, "Chunk size: %ld\n", next_read);
+		fprintf(stderr, "Get chunk size: %ld\n", next_read);
 
 		bytes_read += read_response(sockfd, response + bytes_read, END_OF_LINE, next_read + strlen(END_OF_LINE));
 
@@ -135,7 +141,7 @@ long get_chunked_response(int *sockfd, char *response, long *expected_length) {
  * 
  * Returns int: HTTP status code or error code.
  */
-int http_get(char *url, char *response) {
+int http_get(char *url, char *response, char *flags) {
 
 	// Setup memory
 	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
@@ -148,13 +154,15 @@ int http_get(char *url, char *response) {
 	memset(header, 0, MAX_HEADER_LENGTH);
 	
 	// Parse url string
-	if (parse_url(url, _url) < 0) {
+	status = parse_url(url, _url);
+
+	if (status < 0) {
 		
 		free(_url->protocol);
 		free(_url->host);
 		free(_url->path);
 		free(_url);
-		return INVALID_URL;
+		return status;
 	}
 
 	// Generate request header
@@ -172,16 +180,16 @@ int http_get(char *url, char *response) {
 		return *sockfd;
 	}
 
-	fprintf(stderr, "Connected to %s, request header:\n%s\n\n", _url->host, header);
+	//fprintf(stderr, "Connected to %s, request header:\n%s\n\n", _url->host, header);
+	fprintf(stderr, "Connected to %s. ", _url->host);
 
 	free(_url->protocol);
 	free(_url->host);
 	free(_url->path);
-	free(_url);
 	free(header);
 
 	// Get response header
-	bytes_read = read_response(sockfd, response, HEADER_BOUNDARY, 1);
+	bytes_read = read_response(sockfd, response, HEADER_BOUNDARY, HEADER_MODE);
 
 	if (bytes_read < 0) {
 		return (int)bytes_read;
@@ -190,7 +198,8 @@ int http_get(char *url, char *response) {
 	// HTTP response status
 	status = get_status(response);
 
-	fprintf(stderr, "Response header:\n%s\n", response);
+	//fprintf(stderr, "Response header:\n%s\n", response);
+	fprintf(stderr, "Status: %d\n", status);
 
 	// Handle status codes
 	switch (status) {
@@ -198,19 +207,36 @@ int http_get(char *url, char *response) {
 		// Redirect
 		case 301:
 			get_location(url, response);
-			return http_get(url, response);
+			return http_get(url, response, flags);
 		
 		default:
 			expected_length = get_content_length(response);
 			break;
 	}
 
+	free(_url);
+
 	// Read content from server
 	bytes_read = expected_length == CHUNKED ?
 							   get_chunked_response(sockfd, response, &expected_length) :
 							   read_response(sockfd, response, NULL, expected_length);
 	
-	fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+	//fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+	if (expected_length != bytes_read) {
+		if (strchr(flags, TRUNCATED) != NULL) {
+
+			fprintf(stderr, "Repeated truncated response. Abandoning.\n");
+
+			flags[strlen(flags)] = TWICE_TRUNCATED;
+		} else {
+
+			fprintf(stderr, "Truncated response. Re-fetching.\n");
+
+			flags[strlen(flags)] = TRUNCATED;
+
+			http_get(url, response, flags);
+		}
+	}
 
 	close_socket(sockfd);
 
