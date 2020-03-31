@@ -11,7 +11,7 @@ The goal is to have implemented the functionality of:
 ### Usage
 ```bash
 $ make
-$ crawler <URL>
+$ ./crawler <URL>
 ```
 
 ## Authors
