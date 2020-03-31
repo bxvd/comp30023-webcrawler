@@ -6,6 +6,8 @@ IDIR = ./include
 LDIR = ./lib
 ODIR = ./obj
 
+LIBS = libgumbo.a
+
 # Compiler
 CC = gcc
 CFLAGS = -Wall -Wextra -I$(IDIR)
@@ -38,4 +40,4 @@ $(ODIR)/%.o: $(SDIR)/%.c
 	@$(CC) -c -o $@ $< $(CFLAGS)
 
 $(EXE): $(OBJ)
-	@$(CC) -o $@ $^ $(CFLAGS)
+	@$(CC) $(LDIR)/$(LIBS) -o $@ $^ $(CFLAGS)

@@ -3,6 +3,7 @@
 #include <string.h>
 #include "url.h"
 #include "http.h"
+#include "gumbo.h"
 
 #define MAX_RESPONSE_LENGTH 100000
 
@@ -17,6 +18,9 @@ int crawl(const char *url) {
 
 	// Make GET request
 	int status = http_get(_url, response);
+
+	GumboOutput* gumbo_output = gumbo_parse(response);
+  gumbo_destroy_output(&kGumboDefaultOptions, gumbo_output);
 
 	fprintf(output, "%s", response);
 
