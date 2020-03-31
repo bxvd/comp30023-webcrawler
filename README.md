@@ -9,7 +9,10 @@ The goal is to have implemented the functionality of:
 4. ~~URL parsing~~
 
 ### Usage
-`crawler [URL]`
+```bash
+$ make
+$ crawler [URL]
+```
 
 ## Authors
 Brodie Daff
