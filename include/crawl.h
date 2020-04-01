@@ -1,1 +1,1 @@
-int crawl(const char *url);
+int crawl(char *url, char **fetched, int *n_fetched);

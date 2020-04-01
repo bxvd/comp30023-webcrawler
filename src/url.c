@@ -2,12 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef struct URL {
-	char *path;
-	char *host;
-	char *protocol;
-} URL;
+#include "url.h"
 
 #define DEFAULT_PROTOCOL   "http"
 #define DEFAULT_PATH       "/"
@@ -69,6 +64,19 @@ int parse_url(char *url, URL *url_t) {
 	memmove(url_t->path, element_start, element_length);
 	
 	return (url_t->protocol == NULL || url_t->host == NULL || url_t->path == NULL) ? INVALID_URL : 0;
+}
+
+char *get_host(char *url) {
+
+	URL *url_t = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
+
+	parse_url(url, url_t);
+
+	free(url_t->protocol);
+	free(url_t->path);
+	free(url_t);
+
+	return url_t->host;
 }
 
 /*

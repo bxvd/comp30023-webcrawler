@@ -5,28 +5,23 @@
 #include "url.h"
 #include "client.h"
 
-// HTTP configuration
-#define USER_AGENT "bdaff"
-#define CONNECTION "keep-alive"
-#define ACCEPT     "text/html"
-#define HTTP_VER   "HTTP/1.1"
-#define PORT       80
-
 // Search strings
 #define CONTENT_LENGTH  "Content-Length: "
 #define LOCATION        "Location: "
+#define CONTENT_TYPE    "Content-Type: "
 #define HEADER_BOUNDARY "\r\n\r\n"
 #define END_OF_LINE     "\r\n"
 
 // Memory allocations
-#define MAX_URL_LENGTH      1000
 #define MAX_HEADER_LENGTH   256
 #define MAX_RESPONSE_LENGTH 100000
 #define CHUNK_HEADER_LENGTH 10
 
 // Flags
-#define CHUNKED          -1
-#define INVALID_RESPONSE -6
+#define CHUNKED            -1
+#define INVALID_RESPONSE   -6
+#define TRUNCATED_RESPONSE -8
+#define CONTENT_TYPE_NA    -9
 
 /*
  * Function: get_status
@@ -67,9 +62,25 @@ long get_content_length(char *response) {
 void get_location(char *url, char *response) {
 
 	char *location = strstr(response, LOCATION) + strlen(LOCATION);
+
+	memset(url, 0, MAX_URL_LENGTH);
 	memmove(url, location, strstr(location, END_OF_LINE) - location);
 
 	fprintf(stderr, "Redirect to: %s\n", url);
+}
+
+/*
+ * Function: get_content_type
+ * 
+ * Gets the MIME-type of the content to be received.
+ * 
+ * char *response: Server response header.
+ * 
+ * Returns char*: Pointer to location in response that specifies the content type.
+ */
+char *get_content_type(char *response) {
+
+	return strstr(response, CONTENT_TYPE) + strlen(CONTENT_TYPE);
 }
 
 /*
@@ -84,7 +95,7 @@ void get_location(char *url, char *response) {
 long get_chunk_length(int *sockfd) {
 	
 	/*
-	 * Chunk headers are expressed as a hex string terminated by \r\n.
+	 * Chunk headers are expressed as a hex string terminated by CRLF.
 	 */
 
 	char buffer[CHUNK_HEADER_LENGTH];
@@ -141,7 +152,7 @@ long get_chunked_response(int *sockfd, char *response, long *expected_length) {
  * 
  * Returns int: HTTP status code or error code.
  */
-int http_get(char *url, char *response, char *flags) {
+int http_get(char *url, char *response) {
 
 	// Setup memory
 	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
@@ -195,47 +206,56 @@ int http_get(char *url, char *response, char *flags) {
 		return (int)bytes_read;
 	}
 
-	// HTTP response status
+	// HTTP status code
 	status = get_status(response);
+
+	// Only accept the MIME-type defined by ACCEPT
+	if (
+			strnstr(
+				get_content_type(response),
+				ACCEPT,
+				strstr(get_content_type(response), HEADER_BOUNDARY) - get_content_type(response)
+			) == NULL) {
+		return CONTENT_TYPE_NA;
+	}
 
 	//fprintf(stderr, "Response header:\n%s\n", response);
 	fprintf(stderr, "Status: %d\n", status);
 
+	free(_url);
+
 	// Handle status codes
 	switch (status) {
 
-		// Redirect
+		/*
+		 * Permanent redirect. Equivalent to the original URL being for the same
+		 * page as the new URL, so overrite the old URL and continue.
+		 */
 		case 301:
 			get_location(url, response);
-			return http_get(url, response, flags);
+			return http_get(url, response);
 		
 		default:
-			expected_length = get_content_length(response);
 			break;
 	}
 
-	free(_url);
+
+	// if (status != 200) {
+	// 	return status;
+	// }
+
+	expected_length = get_content_length(response);
 
 	// Read content from server
 	bytes_read = expected_length == CHUNKED ?
 							   get_chunked_response(sockfd, response, &expected_length) :
 							   read_response(sockfd, response, NULL, expected_length);
 	
-	//fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+	fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+
 	if (expected_length != bytes_read) {
-		if (strchr(flags, TRUNCATED) != NULL) {
 
-			fprintf(stderr, "Repeated truncated response. Abandoning.\n");
-
-			flags[strlen(flags)] = TWICE_TRUNCATED;
-		} else {
-
-			fprintf(stderr, "Truncated response. Re-fetching.\n");
-
-			flags[strlen(flags)] = TRUNCATED;
-
-			http_get(url, response, flags);
-		}
+		fprintf(stderr, "Truncated response.\n");
 	}
 
 	close_socket(sockfd);
