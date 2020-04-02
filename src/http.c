@@ -156,47 +156,37 @@ int http_get(char *url, char *response) {
 
 	// Setup memory
 	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
-	URL *_url = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
+	char host[MAX_URL_LENGTH], path[MAX_URL_LENGTH];
 	int *sockfd, status;
 	long bytes_read, expected_length = 0;
 
-	memset(_url, 0, MAX_URL_LENGTH);
 	memset(response, 0, MAX_RESPONSE_LENGTH);
 	memset(header, 0, MAX_HEADER_LENGTH);
 	
 	// Parse url string
-	status = parse_url(url, _url);
-
-	if (status < 0) {
-		
-		free(_url->protocol);
-		free(_url->host);
-		free(_url->path);
-		free(_url);
-		return status;
-	}
+	get_host(url, host);
+	get_path(url, path);
 
 	// Generate request header
 	snprintf(
 		header,
 		MAX_HEADER_LENGTH,
 		"GET %s %s\r\nHost: %s\r\nConnection: %s\r\nUser-Agent: %s\r\nAccept: %s\r\n\r\n",
-		_url->path, HTTP_VER, _url->host, CONNECTION, USER_AGENT, ACCEPT
+		path, HTTP_VER, host, CONNECTION, USER_AGENT, ACCEPT
 	);
 
+	fprintf(stderr, "Request header:\n%s\n", header);
+
 	// Send HTTP request to server
-	sockfd = establish(_url->host, PORT, header);
+	sockfd = establish(host, PORT, header);
 
 	if (*sockfd < 0) {
 		return *sockfd;
 	}
 
 	//fprintf(stderr, "Connected to %s, request header:\n%s\n\n", _url->host, header);
-	fprintf(stderr, "Connected to %s. ", _url->host);
+	fprintf(stderr, "Connected to %s. ", host);
 
-	free(_url->protocol);
-	free(_url->host);
-	free(_url->path);
 	free(header);
 
 	// Get response header
@@ -219,10 +209,8 @@ int http_get(char *url, char *response) {
 		return CONTENT_TYPE_NA;
 	}
 
-	//fprintf(stderr, "Response header:\n%s\n", response);
-	fprintf(stderr, "Status: %d\n", status);
-
-	free(_url);
+	fprintf(stderr, "Response header:\n%s\n", response);
+	//fprintf(stderr, "Status: %d\n", status);
 
 	// Handle status codes
 	switch (status) {
@@ -233,6 +221,7 @@ int http_get(char *url, char *response) {
 		 */
 		case 301:
 			get_location(url, response);
+			close_socket(sockfd);
 			return http_get(url, response);
 		
 		default:

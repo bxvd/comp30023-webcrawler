@@ -12,10 +12,41 @@
 
 #define MAX_RESPONSE_LENGTH 100000
 
-#define NO_LINKS     0
-#define IGNORE       1
-#define DO_NOT_CRAWL 0
-#define SHOULD_CRAWL 1
+#define NO_LINKS 0
+#define IGNORE   1
+
+int should_ignore(char *url, char *host, char **pages, int n) {
+
+	const char path_ignore_strings[N_IGNORE_STRINGS][MAX_STRING_LENGTH] = PATH_IGNORE_STRINGS;
+
+	// Ignore non-basic URLs
+	for (int i = 0; i < N_IGNORE_STRINGS; i++) {
+		if (strstr(url, path_ignore_strings[i]) != NULL) {
+			return IGNORE;
+		}
+	}
+
+	// Fill out URLs that are path or file only
+	if (strstr(url, host) == NULL) {
+
+		char *_url = stringify_url(2, url, host);
+
+		memset(url, 0, MAX_URL_LENGTH);
+		memmove(url, _url, MAX_URL_LENGTH);
+
+		free(_url);
+
+		return should_ignore(url, host, pages, n);
+	}
+
+	for (int i = 0; i < n - 1; i++) {
+		if (!strcmp(url, pages[n])) {
+			return IGNORE;
+		}
+	}
+
+	return 0;
+}
 
 /*
  * Adapted from find_links.cc at https://github.com/google/gumbo-parser/tree/master/examples
@@ -28,60 +59,36 @@
  * int *n:          Number of links stored in 'links' so far.
  * GumboNode *root: Document root node as a Gumbo struct.
  */
-void link_search(char **links, int *n, GumboNode *node) {
+void crawl_links(GumboNode *node, char *url, char **pages, int *n) {
 
 	if (node->type != GUMBO_NODE_ELEMENT) {
 		return;
 	}
 
+	char host[MAX_URL_LENGTH] = {0};
+	get_host(url, host);
+
 	GumboAttribute *href;
 	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
-		fprintf(stderr, "Found link: %s\n", href->value);
-		// Node is an <a> tag with a href value
-		links[*n] = (char*)malloc(strlen(href->value) * sizeof(char));
-		memmove(links[(*n)++], href->value, strlen(href->value));
+
+		char *link = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
+		memset(link, 0, MAX_URL_LENGTH);
+		memmove(link, href->value, strlen(href->value));
+
+		fprintf(stderr, "Found link: %s\n", link);
+		if (!should_ignore(link, host, pages, *n)) {
+			crawl(link, pages, n);
+		}
 	}
 
 	// Traverse tree
 	GumboVector *children = &node->v.element.children;
 	for (unsigned int i = 0; i < children->length; ++i) {
-		link_search(links, n, children->data[i]);
+		crawl_links(children->data[i], url, pages, n);
 	}
-}
-
-/*
- * Function: get_links
- * 
- * Dispatches tree traversal search on a response character string.
- *
- * char **links:   Array to store search results.
- * int *n:         Number of links stored in 'links' so far.
- * char *response: Server content.
- */
-void get_links(char **links, int *n, char *response) {
-
-	GumboOutput *output = gumbo_parse(response);
-
-	link_search(links, n, output->root);
-
-  gumbo_destroy_output(&kGumboDefaultOptions, output);
-}
-
-int should_crawl(char *proposed, char *current) {
-	return SHOULD_CRAWL;
 }
 
 int crawl(char *url, char **pages, int *n) {
-
-	//FILE *output = fopen("response.html", "w");
-	const char path_ignore_strings[N_IGNORE_STRINGS][MAX_STRING_LENGTH] = PATH_IGNORE_STRINGS;
-
-	// Ignore non-basic URLs
-	for (int i = 0; i < N_IGNORE_STRINGS; i++) {
-		if (strstr(url, path_ignore_strings[i]) != NULL) {
-			return IGNORE;
-		}
-	}
 
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
 
@@ -97,34 +104,14 @@ int crawl(char *url, char **pages, int *n) {
 		memmove(pages[(*n)++], url, strlen(url));
 	}
 
-	// Get hrefs from document
-	char **links = (char**)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
-	int n_links = 0;
-	memset(links, 0, MAX_RESPONSE_LENGTH);
-	get_links(links, &n_links, response);
+	// Parse HTML
+	GumboOutput *output = gumbo_parse(response);
 
 	free(response);
 
-	for (int i = 0; i < n_links; i++) {
+	crawl_links(output->root, url, pages, n);
 
-		if (should_crawl(links[i], url)) {
-
-			// URL string is not treated as a constant, do not mutate inside the array
-			char *_url = (char*)malloc(strlen(links[i]) * sizeof(char));
-			memmove(_url, links[i], strlen(links[i]));
-
-			crawl(_url, pages, n);
-
-			free(_url);
-		}
-
-		free(links[i]);
-	}
-
-	//fprintf(output, "%s", response);
-
-	free(links);
-	//fclose(output);
+	gumbo_destroy_output(&kGumboDefaultOptions, output);
 
 	return NO_LINKS;
 }

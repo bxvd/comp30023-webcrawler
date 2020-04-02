@@ -4,11 +4,6 @@
 #include <string.h>
 #include "url.h"
 
-#define DEFAULT_PROTOCOL   "http"
-#define DEFAULT_PATH       "/"
-#define PROTOCOL_DELIMITER "://"
-#define HOST_DELIMITER     "/"
-
 #define INVALID_URL -5
 
 /*
@@ -23,6 +18,11 @@
  */
 int parse_url(char *url, URL *url_t) {
 
+	url_t = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
+	memset(url_t, 0, MAX_URL_LENGTH);
+
+	//fprintf(stderr, "URL: %s\n", url);
+
 	/*
 	 * Code below is just manouvering of pointers to substrings of the URL to get
 	 * its elements, and copy the bytes into the struct.
@@ -32,7 +32,7 @@ int parse_url(char *url, URL *url_t) {
 	int element_length;
 
 	// Get protocol
-	element_end = strstr(url, PROTOCOL_DELIMITER);
+	element_end = strstr(element_start, PROTOCOL_DELIMITER);
 
 	if (element_end == NULL) {
 
@@ -45,38 +45,61 @@ int parse_url(char *url, URL *url_t) {
 		element_end += strlen(PROTOCOL_DELIMITER);
 	}
 
+	//fprintf(stderr, "    Start: %s, length: %d\n", element_start, element_length);
+
 	url_t->protocol = (char*)malloc(element_length * sizeof(char));
 	memmove(url_t->protocol, element_start, element_length);
+	//fprintf(stderr, "  protocol: %s\n", url_t->protocol);
 
 	// Get host
 	element_start = element_end;
 	element_end = strstr(element_start, HOST_DELIMITER);
 	element_length = element_end == NULL ? strlen(element_start) : element_end - element_start;
 
+	//fprintf(stderr, "    Start: %s, length: %d\n", element_start, element_length);
+
 	url_t->host = (char*)malloc(element_length * sizeof(char));
 	memmove(url_t->host, element_start, element_length);
+	//fprintf(stderr, "  host: %s\n", url_t->host);
 
 	// Get path
 	element_start = element_end == NULL ? DEFAULT_PATH : element_end;
 	element_length = strlen(element_start);
 
+	//fprintf(stderr, "    Start: %s, length: %d\n", element_start, element_length);
+
 	url_t->path = (char*)malloc(element_length * sizeof(char));
 	memmove(url_t->path, element_start, element_length);
+	//fprintf(stderr, "  path: %s\n", url_t->path);
 	
 	return (url_t->protocol == NULL || url_t->host == NULL || url_t->path == NULL) ? INVALID_URL : 0;
 }
 
-char *get_host(char *url) {
+void get_protocol(char *url, char *protocol) {
 
-	URL *url_t = (URL*)malloc(MAX_URL_LENGTH * sizeof(char));
+	char *element_end = strstr(url, PROTOCOL_DELIMITER);
+	char *element_start = element_end == NULL ? DEFAULT_PROTOCOL : url;
+	int element_length = element_end == NULL ? strlen(DEFAULT_PROTOCOL) : element_end - url;
 
-	parse_url(url, url_t);
+	memmove(protocol, element_start, element_length);
+}
 
-	free(url_t->protocol);
-	free(url_t->path);
-	free(url_t);
+void get_host(char *url, char *host) {
 
-	return url_t->host;
+	char *element_start = strstr(url, PROTOCOL_DELIMITER), *element_end = strstr(url, HOST_DELIMITER);
+
+	element_start = element_start == NULL ? url : element_start;
+	element_end = element_end == NULL ? (url + strlen(url) - 1) : element_start;
+
+	memmove(host, element_start, element_end - element_start);
+}
+
+void get_path(char *url, char *path) {
+
+	char *element_start = strstr(url, HOST_DELIMITER);
+	element_start = element_start == NULL ? DEFAULT_PATH : element_start;
+
+	memmove(path, element_start, strlen(element_start));
 }
 
 /*
@@ -103,11 +126,14 @@ char *stringify_url(int n, char *path, ...) {
 	// Set protocol delimiter
 	char *pd = strcmp(protocol, "mailto") ? "://" : ":";
 
+	// Add host delimiter if path is file only
+	char *hd = path[0] != HOST_DELIMITER[0] ? HOST_DELIMITER : "";
+
 	// Allocate persistent memory
-	char *url = (char*)malloc(strlen(path) + strlen(host) + strlen(protocol) + strlen(pd));
+	char *url = (char*)malloc((strlen(path) + strlen(hd) + strlen(host) + strlen(protocol) + strlen(pd)) * sizeof(char));
 
 	// Concatenate strings
-	sprintf(url, "%s%s%s%s", protocol, pd, host, path);
+	sprintf(url, "%s%s%s%s%s", protocol, pd, host, hd, path);
 
 	return url;
 }
