@@ -230,20 +230,23 @@ int http_get(char *url, char *response, char *flag) {
 	// }
 
 	// Handle status codes
-	switch (status) {
-
-		/*
-		 * Permanent redirect. Equivalent to the original URL being for the same
-		 * page as the new URL, so overrite the old URL and continue.
-		 */
-		case 301:
-			get_location(url, response);
-			close_socket(sockfd);
-			return http_get(url, response, flag);
-		
-		default:
-			break;
+	if (status != 200) {
+		return status;
 	}
+	// switch (status) {
+
+	// 	/*
+	// 	 * Permanent redirect. Equivalent to the original URL being for the same
+	// 	 * page as the new URL, so overrite the old URL and continue.
+	// 	 */
+	// 	case 301:
+	// 		get_location(url, response);
+	// 		close_socket(sockfd);
+	// 		return http_get(url, response, flag);
+		
+	// 	default:
+	// 		break;
+	// }
 
 	expected_length = get_content_length(response);
 

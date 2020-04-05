@@ -23,6 +23,8 @@
 
 #define MAX_RESPONSE_LENGTH 100000
 
+#define GITLAB_TEST 1
+
 #define NO_LINKS  0
 #define IGNORE    1
 #define RECURSIVE 1
@@ -146,23 +148,32 @@ int ignore_link(char *url, char *host) {
 	char candidate[MAX_URL_LENGTH] = {0};
 	get_host(url, candidate);
 
-	// Handle cases where the original host is only 'name.TLD'
-	int n_host = 0, n_candidate = 0;
-	char *_host = host, *_candidate = candidate;
+	if (!GITLAB_TEST) {
 
-	while ((_host = strstr(_host, HOST_EL_DELIMITER))) {
-		_host++;
-		n_host++;
-	}
+		// Handle cases where the original host is only 'name.TLD'
+		int n_host = 0, n_candidate = 0;
+		char *_host = host, *_candidate = candidate;
 
-	while ((_candidate = strstr(_candidate, HOST_EL_DELIMITER))) {
-		_candidate++;
-		n_candidate++;
-	}
+		while ((_host = strstr(_host, HOST_EL_DELIMITER))) {
+			_host++;
+			n_host++;
+		}
 
-	// Compare host strings from where the first '.' is found
-	if (strcmp(n_host <= 1 ? host : strstr(host, HOST_EL_DELIMITER) + 1, n_candidate <= 1 ? candidate : strstr(candidate, HOST_EL_DELIMITER) + 1)) {
-		return IGNORE;
+		while ((_candidate = strstr(_candidate, HOST_EL_DELIMITER))) {
+			_candidate++;
+			n_candidate++;
+		}
+
+		// Compare host strings from where the first '.' is found
+		if (strcmp(n_host <= 1 ? host : strstr(host, HOST_EL_DELIMITER) + 1, n_candidate <= 1 ? candidate : strstr(candidate, HOST_EL_DELIMITER) + 1)) {
+			return IGNORE;
+		}
+	} else {
+
+		// Compare host strings from where the first '.' is found
+		if (!strcmp(strstr(host, HOST_EL_DELIMITER), strstr(candidate, HOST_EL_DELIMITER))) {
+			return IGNORE;
+		}
 	}
 
 	return 0;
@@ -222,15 +233,15 @@ void parse(char *response, Page *page) {
 
 void crawl(char *url) {
 
-	//FILE *response_output = fopen("output.html", "w");
-	//FILE *links_output = fopen("links.txt", "w");
-
 	// Setup memory
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
 
 	Page *page, *head = get_page(url, NULL);
 	head->status = http_get(head->location, response, &head->flag);
-	parse(response, head);
+
+	if (head->status == 200) {
+		parse(response, head);
+	}
 
 	page = head;
 
@@ -239,7 +250,9 @@ void crawl(char *url) {
 		page->status = http_get(page->location, response, &page->flag);
 		fprintf(stdout, "%s\n", page->location);
 
-		parse(response, page);
+		if (page->status == 200) {
+			parse(response, page);
+		}
 	}
 
 	destroy_page(head, RECURSIVE);
