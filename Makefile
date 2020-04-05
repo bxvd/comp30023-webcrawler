@@ -11,7 +11,7 @@ LIBS = libgumbo.a
 # Compiler
 CC = clang
 CFLAGS = -Wall -Wextra -I$(IDIR)
-CMFLAGS = -fsanitize=address -g -O1 -Wall -Wextra -I$(IDIR)
+CMFLAGS = -fsanitize=address -g -O1 -Wall -Wextra -v -I$(IDIR)
 
 MKDIR = mkdir -p
 

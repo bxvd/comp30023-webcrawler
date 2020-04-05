@@ -1,10 +1,4 @@
-image: ubuntu:19.10
-
-before_script:
-    - apt-get -qq update && apt-get install -y -qq gcc make
-    - make clean && make -B
-
+image: 172.26.132.26:5000/comp30023/test-man:latest
 test:
     script:
-        - ./crawler
-        
+        - /tests/test.sh $(echo ${CI_PROJECT_PATH} | cut -d/ -f2)

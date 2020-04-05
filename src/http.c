@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include "http.h"
 #include "url.h"
 #include "client.h"
@@ -217,14 +218,14 @@ int http_get(char *url, char *response, char *flag) {
 	status = get_status(response);
 
 	// Only accept the MIME-type defined by ACCEPT
-	if (
-			strnstr(
-				get_content_type(response),
-				ACCEPT,
-				strstr(get_content_type(response), HEADER_BOUNDARY) - get_content_type(response)
-			) == NULL) {
-		return CONTENT_TYPE_NA;
-	}
+	// if (
+	// 		strnstr(
+	// 			get_content_type(response),
+	// 			ACCEPT,
+	// 			strstr(get_content_type(response), HEADER_BOUNDARY) - get_content_type(response)
+	// 		) == NULL) {
+	// 	return CONTENT_TYPE_NA;
+	// }
 
 	if (PRINTERR) {
 		fprintf(stderr, "Response header:\n%s\n", response);

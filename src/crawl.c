@@ -1,3 +1,15 @@
+/*
+ * Source file: crawl.c
+ * 
+ * Handles and dispatches all crawl logic and memory handling for the
+ * crawler program.
+ * 
+ * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
+ * 
+ * Acknowledgements:
+ * * Function find_links is adapted from find_links.cc at https://github.com/google/gumbo-parser/tree/master/examples
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,33 +27,110 @@
 #define NO_LINKS 0
 #define IGNORE   1
 
-Page *fetch(int status, Page *prev) {
+/*
+ * Function: get_page
+ * 
+ * Initialises a Page struct.
+ * 
+ * char *url:  URL string to page location.
+ * Page *prev: The previous node in the doubly linked list data structure.
+ * 
+ * Returns Page*: New memory-allocated Page.
+ */
+Page *get_page(char *url, Page *prev) {
 
+	// Setup memory allocations
+	Page *page = (Page*)malloc(sizeof(Page));
+	page->location = (char*)malloc(sizeof(MAX_URL_LENGTH));
+	memset(page->location, 0, MAX_URL_LENGTH);
+
+	// Set values
+	page->prev = prev;
+	page->next = NULL;
+	page->flag = 0;
+	page->status = 0;
+	memmove(page->location, url, strlen(url));
+
+	return page;
+}
+
+/*
+ * Function: destroy_page
+ * 
+ * Frees the memory used by a Page.
+ * 
+ * Page *page: Pointer to page to be destroyed.
+ * int r:      Destroys children recursively if r doesn't evaluate to 0.
+ */
+void destroy_page(Page *page, int r) {
+
+	free(page->location);
+
+	while (r && page->next) {
+		destroy_page(page->next, r);
+	}
+
+	free (page);
+}
+
+/*
+ * Function: find_links
+ * 
+ * Recursive HTML node tree traverser finding all hrefs.
+ * 
+ * GumboNode *node: HTML node as a Gumbo struct.
+ */
+void find_links(GumboNode *node) {
+
+	// End of document
+	if (node->type != GUMBO_NODE_ELEMENT) {
+		return;
+	}
+
+	// Current node is a href
+	GumboAttribute *href;
+	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
+
+		// do something with href->value (url string)
+	}
+
+	// Current node is not a href, try its children
+	GumboVector *children = &node->v.element.children;
+	for (unsigned int i = 0; i < children->length; ++i) {
+		// Recurse
+	}
 }
 
 void crawl(char *url) {
 
+	FILE *response_output = fopen("output.html", "w");
+	FILE *links_output = fopen("links.txt", "w");
+
 	// Setup memory
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
 
-	Page *head = fetch(http_get(url, response))
-	char flag = 0;
-	int status = http_get(url, response, &flag);
-	Page *head = (Page*)malloc(sizeof(Page));
+	Page *head = get_page(url, NULL);
+	head->status = http_get(url, response, &head->flag);
+	// Page *head = (Page*)malloc(sizeof(Page));
 
-	if (status == 200) {
+	// if (status == 200) {
 
-		// Setup first page
-		head->head = head;
-		head->prev = NULL;
-		head->next = NULL;
-		head->location = url;
-		head->status = status;
-	}
+	// 	// Setup first page
+	// 	head->head = head;
+	// 	head->prev = NULL;
+	// 	head->next = NULL;
+	// 	head->location = url;
+	// 	head->status = status;
+	// }
 
 	fprintf(stderr, "Status: %d\n", head->status);
+	fprintf(response_output, "%s\n", response);
 
-	
+	destroy_page(head, 0);
+
+	free(response);
+	fclose(response_output);
+	fclose(links_output);
 }
 
 

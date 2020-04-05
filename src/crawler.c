@@ -23,6 +23,7 @@ int main(int argc, const char **argv) {
 	memmove(url, argv[1], strlen(argv[1]));
 
 	crawl(url);
+	free(url);
 
 	return 0;
 }
