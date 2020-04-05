@@ -7,7 +7,7 @@ LDIR = ./lib
 ODIR = ./obj
 
 # Compiler
-CC = clang
+CC = gcc
 CFLAGS = -Wall -Wextra -I$(IDIR) 
 SANITISE = -fsanitize=address -g -O1
 
@@ -19,10 +19,6 @@ LIB := gumbo/src
 LIBDIR := $(LDIR)/$(LIB)
 LIBO := attribute.o char_ref.o error.o parser.o string_buffer.o string_piece.o tag.o tokenizer.o utf8.o \
 				util.o vector.o
-LIBI := attribute.h char_ref.h error.h parser.h string_buffer.h string_piece.h tag_enum.h tag_gperf.h \
-				tag_sizes.h tag_strings.h gumbo.h insertion_mode.h token_type.h tokenizer_states.h tokenizer.h \
-				utf8.h util.h vector.h
-LIBI := $(LIBH:%=$(LDIR)/%)
 
 # Objects
 OBJ := $(LIBO) crawler.o crawl.o http.o url.o client.o
@@ -63,21 +59,17 @@ tidy:
 libs: gumbo
 
 # Build Gumbo library from src
-gumbo: $(LIBI) $(LIBO)
+gumbo: $(LIBO)
 
 # Build src files
 $(ODIR)/%.o: $(SDIR)/%.c
 	@$(MKDIR) $(@D)
-	@$(CC) -c -o $@ $< $(CFLAGS) $(SANITISE)
+	@$(CC) -c -o $@ $< $(CFLAGS)
 
 # Build lib src files
 $(ODIR)/%.o: $(LIBDIR)/%.c
 	@$(MKDIR) $(@D)
 	@$(CC) -c -o $@ $< -I$(IDIR)
 
-# Include all necessary header files
-$(IDIR)/%: %
-	@$(CP) $^ $(IDIR)
-
 $(EXE): $(OBJ)
-	@$(CC) -o $@ $^ $(CFLAGS) $(SANITISE)
+	@$(CC) -o $@ $^ $(CFLAGS)

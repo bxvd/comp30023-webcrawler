@@ -18,13 +18,15 @@
 #include "http.h"
 #include "gumbo.h"
 
-#define PATH_IGNORE_CHARS "?#%"
+#define PATH_IGNORE_CHARS  "?#%"
+#define PATH_IGNORE_STRING "./"
 
 #define MAX_RESPONSE_LENGTH 100000
 
 #define NO_LINKS  0
 #define IGNORE    1
 #define RECURSIVE 1
+#define SINGLE    0
 
 /*
  * Function: get_page
@@ -65,20 +67,67 @@ void destroy_page(Page *page, int r) {
 
 	free(page->location);
 
-	while (r && page->next) {
-		destroy_page(page->next, r);
+	if (page->prev) {
+		page->prev->next = page->next;
 	}
 
-	free (page);
+	if (page->next) {
+
+		if (r) {
+			destroy_page(page->next, r);
+		} else {
+			page->next->prev = page->prev;
+		}
+	}
+
+	free(page);
 }
 
+int exists(char *location, Page *page) {
+
+	if (!strcmp(location, page->location)) {
+		return IGNORE;
+	}
+
+	Page *prev = page;
+	while ((prev = prev->prev)) {
+		if (!strcmp(location, prev->location)) {
+			return IGNORE;
+		}
+	}
+
+	Page *next = page;
+	while ((next = next->next)) {
+		if (!strcmp(location, next->location)) {
+			return IGNORE;
+		}
+	}
+
+	return 0;
+}
+
+/*
+ * Function: ignore_link
+ * 
+ * Returns a flag indicating whether a link should be ignored from the crawl.
+ * 
+ * char *url:  URL to be evaluated.
+ * char *host: Original host.
+ * 
+ * Returns int: Evaluative flag.
+ */
 int ignore_link(char *url, char *host) {
 
 	// Ignore URLs with functional characters in the path
-	for (int i = 0; i < strlen(PATH_IGNORE_CHARS); i++) {
-		if (strchr(url, PATH_IGNORE_CHARS[i]) != NULL) {
+	for (int i = 0; i < (int)strlen(PATH_IGNORE_CHARS); i++) {
+		if (strchr(url, PATH_IGNORE_CHARS[i])) {
 			return IGNORE;
 		}
+	}
+
+	// Ignore relative directories
+	if (strstr(url, PATH_IGNORE_STRING)) {
+		return IGNORE;
 	}
 
 	// URL is a relative path and needs to be filled out
@@ -94,15 +143,39 @@ int ignore_link(char *url, char *host) {
 	}
 
 	// Only visit pages if all but the first component of the host are the same
-	char *candidate[MAX_URL_LENGTH] = {0};
+	char candidate[MAX_URL_LENGTH] = {0};
 	get_host(url, candidate);
 
+	// Handle cases where the original host is only 'name.TLD'
+	int n_host = 0, n_candidate = 0;
+	char *_host = host, *_candidate = candidate;
+
+	while ((_host = strstr(_host, HOST_EL_DELIMITER))) {
+		_host++;
+		n_host++;
+	}
+
+	while ((_candidate = strstr(_candidate, HOST_EL_DELIMITER))) {
+		_candidate++;
+		n_candidate++;
+	}
+
 	// Compare host strings from where the first '.' is found
-	if (!strcmp(strstr(candidate, HOST_EL_DELIMITER), strstr(host, HOST_EL_DELIMITER))) {
+	if (strcmp(n_host <= 1 ? host : strstr(host, HOST_EL_DELIMITER) + 1, n_candidate <= 1 ? candidate : strstr(candidate, HOST_EL_DELIMITER) + 1)) {
 		return IGNORE;
 	}
 
 	return 0;
+}
+
+void add_page(Page *page) {
+
+	while (page->prev->next) {
+		page->prev = page->prev->next;
+	}
+
+	page->prev->next = page;
+	page->next = NULL;
 }
 
 /*
@@ -112,7 +185,7 @@ int ignore_link(char *url, char *host) {
  * 
  * GumboNode *node: HTML node as a Gumbo struct.
  */
-void find_links(GumboNode *node, Page *page, FILE *links) {
+void find_links(GumboNode *node, Page *page) {
 
 	// End of document
 	if (node->type != GUMBO_NODE_ELEMENT) {
@@ -128,43 +201,48 @@ void find_links(GumboNode *node, Page *page, FILE *links) {
 		memmove(location, href->value, strlen(href->value));
 		get_host(page->location, host);
 
-		fprintf(links, "%s > ", href->value);
-
-		if (!ignore_link(location, host)) {
-			fprintf(links, "%s\n", location);
-		} else {
-			fprintf(links, "IGNORE\n");
+		if (!ignore_link(location, host) && !exists(location, page)) {
+			add_page(get_page(location, page));
 		}
 	}
 
 	// Current node is not a href, try its children
 	GumboVector *children = &node->v.element.children;
 	for (unsigned int i = 0; i < children->length; ++i) {
-		find_links((GumboNode*)children->data[i], page, links);
+		find_links((GumboNode*)children->data[i], page);
 	}
+}
+
+void parse(char *response, Page *page) {
+
+	GumboOutput *parsed_output = gumbo_parse(response);
+	find_links(parsed_output->root, page);
+	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
 }
 
 void crawl(char *url) {
 
-	FILE *response_output = fopen("output.html", "w");
-	FILE *links_output = fopen("links.txt", "w");
+	//FILE *response_output = fopen("output.html", "w");
+	//FILE *links_output = fopen("links.txt", "w");
 
 	// Setup memory
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
 
-	Page *head = get_page(url, NULL);
+	Page *page, *head = get_page(url, NULL);
 	head->status = http_get(head->location, response, &head->flag);
+	parse(response, head);
 
-	GumboOutput *parsed_output = gumbo_parse(response);
-	find_links(parsed_output->root, head, links_output);
-	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
+	page = head;
 
-	fprintf(stderr, "Status: %d\n", head->status);
-	fprintf(response_output, "%s\n", response);
+	while ((page = page->next)) {
+
+		page->status = http_get(page->location, response, &page->flag);
+		fprintf(stdout, "%s\n", page->location);
+
+		parse(response, page);
+	}
 
 	destroy_page(head, RECURSIVE);
 
 	free(response);
-	fclose(response_output);
-	fclose(links_output);
 }

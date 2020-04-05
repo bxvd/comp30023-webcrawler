@@ -6,7 +6,7 @@
 #include "url.h"
 #include "client.h"
 
-#define PRINTERR 1
+#define PRINTERR 0
 
 // Search strings
 #define CONTENT_LENGTH  "Content-Length: "
@@ -67,7 +67,9 @@ void get_location(char *url, char *response) {
 	memset(url, 0, MAX_URL_LENGTH);
 	memmove(url, location, strstr(location, END_OF_LINE) - location);
 
-	fprintf(stderr, "Redirect to: %s\n", url);
+	if (PRINTERR) {
+		fprintf(stderr, "Redirect to: %s\n", url);
+	}
 }
 
 /*
