@@ -6,18 +6,22 @@ IDIR = ./include
 LDIR = ./lib
 ODIR = ./obj
 
-LIBS = libgumbo.a
-
 # Compiler
 CC = clang
-CFLAGS = -Wall -Wextra -I$(IDIR)
-CMFLAGS = -fsanitize=address -g -O1 -Wall -Wextra -I$(IDIR)
+CFLAGS = -Wall -Wextra -I$(IDIR) 
+SANITISE = -fsanitize=address -g -O1
 
 MKDIR = mkdir -p
 
 # Objects
 OBJ := crawler.o crawl.o http.o url.o client.o
 OBJ := $(OBJ:%=$(ODIR)/%)
+
+# Libraries
+LIB := gumbo
+LIB := $(LIB:%=-l%)
+
+#-Wl,-rpath,/absolute/path
 
 # Output
 EXE = crawler
@@ -46,7 +50,7 @@ clean:
 
 $(ODIR)/%.o: $(SDIR)/%.c
 	@$(MKDIR) $(@D)
-	@$(CC) -c -o $@ $< $(CMFLAGS)
+	@$(CC) -c -o $@ $< $(CFLAGS) $(SANITISE)
 
 $(EXE): $(OBJ)
-	@$(CC) -o $@ $^ $(CMFLAGS)
+	@$(CC) -L$(LDIR) $(LIB) -o $@ $^ $(CFLAGS) -Wl,-rpath,$(LDIR) $(SANITISE)
