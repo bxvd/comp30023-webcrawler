@@ -6,7 +6,7 @@
 #include "url.h"
 #include "client.h"
 
-#define PRINTERR 0
+#define PRINTERR 1
 
 // Search strings
 #define CONTENT_LENGTH  "Content-Length: "
@@ -186,7 +186,7 @@ int http_get(char *url, char *response, char *flag) {
 	free(path);
 
 	if (PRINTERR) {
-		fprintf(stderr, "Request header:\n%s\n", header);
+		fprintf(stderr, "Request header:\n%s\n\n", header);
 	}
 
 	// Send HTTP request to server
@@ -197,7 +197,7 @@ int http_get(char *url, char *response, char *flag) {
 	}
 
 	if (PRINTERR) {
-		fprintf(stderr, "Connected to %s, request header:\n%s\n\n", host, header);
+		fprintf(stderr, "Connected to %s\n", host);
 	}
 
 	free(host);
@@ -226,10 +226,6 @@ int http_get(char *url, char *response, char *flag) {
 	// 		) == NULL) {
 	// 	return CONTENT_TYPE_NA;
 	// }
-
-	if (PRINTERR) {
-		fprintf(stderr, "Response header:\n%s\n", response);
-	}
 
 	// Handle status codes
 	switch (status) {

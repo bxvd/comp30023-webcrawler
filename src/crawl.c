@@ -24,8 +24,9 @@
 
 #define MAX_RESPONSE_LENGTH 100000
 
-#define NO_LINKS 0
-#define IGNORE   1
+#define NO_LINKS  0
+#define IGNORE    1
+#define RECURSIVE 1
 
 /*
  * Function: get_page
@@ -41,7 +42,7 @@ Page *get_page(char *url, Page *prev) {
 
 	// Setup memory allocations
 	Page *page = (Page*)malloc(sizeof(Page));
-	page->location = (char*)malloc(sizeof(MAX_URL_LENGTH));
+	page->location = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
 	memset(page->location, 0, MAX_URL_LENGTH);
 
 	// Set values
@@ -80,7 +81,7 @@ void destroy_page(Page *page, int r) {
  * 
  * GumboNode *node: HTML node as a Gumbo struct.
  */
-void find_links(GumboNode *node) {
+void find_links(GumboNode *node, FILE *links) {
 
 	// End of document
 	if (node->type != GUMBO_NODE_ELEMENT) {
@@ -91,13 +92,13 @@ void find_links(GumboNode *node) {
 	GumboAttribute *href;
 	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
 
-		// do something with href->value (url string)
+		fprintf(links, "%s\n", href->value);
 	}
 
 	// Current node is not a href, try its children
 	GumboVector *children = &node->v.element.children;
 	for (unsigned int i = 0; i < children->length; ++i) {
-		// Recurse
+		find_links((GumboNode*)children->data[i], links);
 	}
 }
 
@@ -110,7 +111,7 @@ void crawl(char *url) {
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
 
 	Page *head = get_page(url, NULL);
-	head->status = http_get(url, response, &head->flag);
+	head->status = http_get(head->location, response, &head->flag);
 	// Page *head = (Page*)malloc(sizeof(Page));
 
 	// if (status == 200) {
@@ -124,12 +125,13 @@ void crawl(char *url) {
 	// }
 
 	GumboOutput *parsed_output = gumbo_parse(response);
+	find_links(parsed_output->root, links_output);
 	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
 
 	fprintf(stderr, "Status: %d\n", head->status);
 	fprintf(response_output, "%s\n", response);
 
-	destroy_page(head, 0);
+	destroy_page(head, RECURSIVE);
 
 	free(response);
 	fclose(response_output);

@@ -7,21 +7,29 @@ LDIR = ./lib
 ODIR = ./obj
 
 # Compiler
-CC = clang
+CC = gcc
 CFLAGS = -Wall -Wextra -I$(IDIR) 
 SANITISE = -fsanitize=address -g -O1
 
 MKDIR = mkdir -p
-
-# Objects
-OBJ := crawler.o crawl.o http.o url.o client.o
-OBJ := $(OBJ:%=$(ODIR)/%)
+CP = cp -r -n
 
 # Libraries
-LIB := gumbo
-LIB := $(LIB:%=-l%)
+LIB := libgumbo/src
+LIBDIR := $(LDIR)/$(LIB)
+LIBO := attribute.o char_ref.o error.o parser.o string_buffer.o string_piece.o tag.o tokenizer.o utf8.o \
+				util.o vector.o
+LIBI := attribute.h char_ref.h error.h parser.h string_buffer.h string_piece.h tag_enum.h tag_gperf.h \
+				tag_sizes.h tag_strings.h gumbo.h insertion_mode.h token_type.h tokenizer_states.h tokenizer.h \
+				utf8.h util.h vector.h
+LIBI := $(LIBH:%=$(LDIR)/%)
 
-#-Wl,-rpath,/absolute/path
+# Objects
+OBJ := $(LIBO) crawler.o crawl.o http.o url.o client.o
+OBJ := $(OBJ:%=$(ODIR)/%)
+LIBO := $(LIBO:%=$(ODIR)/%)
+
+#-L$(LDIR)  -Wl,-rpath,$(LDIR)
 
 # Output
 EXE = crawler
@@ -32,9 +40,12 @@ TEST1 = http://ibdhost.com/help/html/
 TEST2 = google.com
 TEST3 = https://webhook.site/a6e635ec-e82e-4ef8-b94c-20820b1d823e
 
-.PHONY: all run clean
+# Look in lib for extra header files
+vpath %.h $(LIBDIR)
 
-all: clean $(EXE)
+.PHONY: all run clean libgumbo
+
+all: clean libgumbo $(EXE)
 
 test1: all
 	@./$(EXE) $(TEST1)
@@ -48,9 +59,22 @@ test3: all
 clean:
 	@rm -r -f $(ODIR) $(EXE)
 
+# Include libgumbo in build
+libgumbo: $(LIBI) $(LIBO)
+
+# Build src files
 $(ODIR)/%.o: $(SDIR)/%.c
 	@$(MKDIR) $(@D)
-	@$(CC) -c -o $@ $< $(CFLAGS) $(SANITISE)
+	@$(CC) -c -o $@ $< $(CFLAGS)
+
+# Build lib src files
+$(ODIR)/%.o: $(LIBDIR)/%.c
+	@$(MKDIR) $(@D)
+	@$(CC) -c -o $@ $< -I$(IDIR)
+
+# Include all necessary header files
+$(IDIR)/%: %
+	@$(CP) $^ $(IDIR)
 
 $(EXE): $(OBJ)
-	@$(CC) -L$(LDIR) $(LIB) -o $@ $^ $(CFLAGS) -Wl,-rpath,$(LDIR) $(SANITISE)
+	@$(CC) -o $@ $^ $(CFLAGS)
