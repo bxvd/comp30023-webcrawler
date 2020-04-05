@@ -11,7 +11,7 @@ LIBS = libgumbo.a
 # Compiler
 CC = clang
 CFLAGS = -Wall -Wextra -I$(IDIR)
-CMFLAGS = -fsanitize=address -g -O1 -Wall -Wextra -v -I$(IDIR)
+CMFLAGS = -fsanitize=address -g -O1 -Wall -Wextra -I$(IDIR)
 
 MKDIR = mkdir -p
 
@@ -49,4 +49,4 @@ $(ODIR)/%.o: $(SDIR)/%.c
 	@$(CC) -c -o $@ $< $(CMFLAGS)
 
 $(EXE): $(OBJ)
-	@$(CC) $(LDIR)/$(LIBS) -o $@ $^ $(CMFLAGS)
+	@$(CC) -o $@ $^ $(CMFLAGS)

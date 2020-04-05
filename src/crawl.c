@@ -123,6 +123,9 @@ void crawl(char *url) {
 	// 	head->status = status;
 	// }
 
+	GumboOutput *parsed_output = gumbo_parse(response);
+	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
+
 	fprintf(stderr, "Status: %d\n", head->status);
 	fprintf(response_output, "%s\n", response);
 
