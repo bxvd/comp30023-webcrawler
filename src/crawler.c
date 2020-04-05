@@ -2,20 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include "crawl.h"
+#include "url.h"
 
-#define ARGS_REQUIRED 2
+#define ARGS_REQUIRED     2
+#define MAX_PAGES_FETCHED 100
 
-#define ARGS_ERROR 1
+#define ARGS_ERROR -7
 
-/*
- * Function: validate_args
- * 
- * Ensures correct command line args are passed.
- * 
- * int argc:          main's argc.
- * const char** argv: main's argv.
- */
-void validate_args(int argc, const char** argv) {
+int main(int argc, const char **argv) {
 
 	if (argc != ARGS_REQUIRED) {
 		fprintf(stderr, "Wrong number of args passed.\n");
@@ -23,11 +17,42 @@ void validate_args(int argc, const char** argv) {
 
 		exit(ARGS_ERROR);
 	}
+
+	char *url = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
+	memset(url, 0, MAX_URL_LENGTH);
+	memmove(url, argv[1], strlen(argv[1]));
+
+	crawl(url);
+	free(url);
+
+	return 0;
 }
 
-int main(int argc, const char** argv) {
+// int main(int argc, const char **argv) {
 
-	validate_args(argc, argv);
+// 	if (argc != ARGS_REQUIRED) {
+// 		fprintf(stderr, "Wrong number of args passed.\n");
+// 		fprintf(stderr, "Usage:\n    %s [URL]\n", argv[0]);
 
-	return crawl(argv[1]);
-}
+// 		exit(ARGS_ERROR);
+// 	}
+
+// 	char **pages = (char**)malloc(MAX_PAGES_FETCHED * MAX_URL_LENGTH * sizeof(char));
+// 	char *url = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
+// 	int n = 0;
+
+// 	memset(pages, 0, MAX_PAGES_FETCHED * MAX_URL_LENGTH);
+// 	memset(url, 0, MAX_URL_LENGTH);
+// 	memmove(url, argv[1], strlen(argv[1]));
+	
+// 	int error_code = crawl(url, pages, &n);
+
+// 	while (n > 0) {
+// 		free(pages[--n]);
+// 	}
+
+// 	free(pages);
+// 	free(url);
+
+// 	return error_code;
+// }

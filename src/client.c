@@ -69,7 +69,7 @@ void setup_socket(int *sockfd, struct hostent *addr, int port) {
  * Returns int*: Pointer to a socket file descriptor.
  */
 int *establish(char *host, int port, char *header) {
-
+	
 	// Persistent sockfd to keep socket open
 	int *sockfd = (int*)malloc(sizeof(int));
 
@@ -126,6 +126,9 @@ long read_response(int *sockfd, char *response, char *boundary, long content_len
 		if ((bytes_read >= (long)strlen(boundary)) && (strstr(response, boundary) != NULL)) {
 			return bytes_read;
 		}
+
+		// Prevent reading more bytes than expected
+		buffer_length = buffer_length == HEADER_MODE ? buffer_length : content_length - bytes_read;
 	}
 
 	return bytes_read;

@@ -9,10 +9,15 @@ The goal is to have implemented the functionality of:
 4. ~~URL parsing~~
 
 ### Usage
-`crawler [URL]`
+```bash
+$ make
+$ ./crawler <URL>
+```
 
 ## Authors
 Brodie Daff
 
 ## Acknowledgements
 * `Makefile` was adapted from http://www.cs.colby.edu/maxwell/courses/tutorials/maketutor/
+* `client.c` was adapted from COMP30023 workshop 4.
+* Uses [Gumbo HTML Parser](http://github.com/google/gumbo-parser) by Google.
