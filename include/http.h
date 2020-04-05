@@ -5,4 +5,8 @@
 #define HTTP_VER   "HTTP/1.1"
 #define PORT       80
 
-int http_get(char *url, char *response);
+// Flags
+#define TRUNCATED       'T'
+#define CONTENT_TYPE_NA 'M'
+
+int http_get(char *url, char *response, char *flag);

@@ -86,18 +86,20 @@ void get_protocol(char *url, char *protocol) {
 
 void get_host(char *url, char *host) {
 
-	char *element_start = strstr(url, PROTOCOL_DELIMITER), *element_end = strstr(url, HOST_DELIMITER);
+	char *element_start = strstr(url, PROTOCOL_DELIMITER);
+	element_start = element_start == NULL ? url : element_start + strlen(PROTOCOL_DELIMITER);
 
-	element_start = element_start == NULL ? url : element_start;
-	element_end = element_end == NULL ? (url + strlen(url) - 1) : element_start;
+	char *element_end = strstr(element_start, HOST_DELIMITER);
+	element_end = element_end == NULL ? (url + strlen(url) - 1) : element_end;
 
 	memmove(host, element_start, element_end - element_start);
 }
 
 void get_path(char *url, char *path) {
 
-	char *element_start = strstr(url, HOST_DELIMITER);
-	element_start = element_start == NULL ? DEFAULT_PATH : element_start;
+	char *element_start = strstr(url, PROTOCOL_DELIMITER);
+	element_start = element_start == NULL ? url : strstr(element_start + strlen(PROTOCOL_DELIMITER), HOST_DELIMITER);
+	element_start = element_start == NULL ? DEFAULT_PATH : element_start + strlen(HOST_DELIMITER) - 1;
 
 	memmove(path, element_start, strlen(element_start));
 }

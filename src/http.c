@@ -5,6 +5,8 @@
 #include "url.h"
 #include "client.h"
 
+#define PRINTERR 0
+
 // Search strings
 #define CONTENT_LENGTH  "Content-Length: "
 #define LOCATION        "Location: "
@@ -20,8 +22,6 @@
 // Flags
 #define CHUNKED            -1
 #define INVALID_RESPONSE   -6
-#define TRUNCATED_RESPONSE -8
-#define CONTENT_TYPE_NA    -9
 
 /*
  * Function: get_status
@@ -118,7 +118,9 @@ long get_chunk_length(int *sockfd) {
  */
 long get_chunked_response(int *sockfd, char *response, long *expected_length) {
 
-	fprintf(stderr, "Begin chunked transfer.\n");
+	if (PRINTERR) {
+		fprintf(stderr, "Begin chunked transfer.\n");
+	}
 
 	long next_read, bytes_read = 0;
 	*expected_length = 0;
@@ -128,7 +130,9 @@ long get_chunked_response(int *sockfd, char *response, long *expected_length) {
 
 	while (next_read) {
 
-		fprintf(stderr, "Get chunk size: %ld\n", next_read);
+		if (PRINTERR) {
+			fprintf(stderr, "Get chunk size: %ld\n", next_read);
+		}
 
 		bytes_read += read_response(sockfd, response + bytes_read, END_OF_LINE, next_read + strlen(END_OF_LINE));
 
@@ -152,16 +156,19 @@ long get_chunked_response(int *sockfd, char *response, long *expected_length) {
  * 
  * Returns int: HTTP status code or error code.
  */
-int http_get(char *url, char *response) {
+int http_get(char *url, char *response, char *flag) {
 
 	// Setup memory
 	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
-	char host[MAX_URL_LENGTH], path[MAX_URL_LENGTH];
+	char *host = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
+	char *path = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
 	int *sockfd, status;
 	long bytes_read, expected_length = 0;
 
 	memset(response, 0, MAX_RESPONSE_LENGTH);
 	memset(header, 0, MAX_HEADER_LENGTH);
+	memset(host, 0, MAX_URL_LENGTH);
+	memset(path, 0, MAX_URL_LENGTH);
 	
 	// Parse url string
 	get_host(url, host);
@@ -175,7 +182,11 @@ int http_get(char *url, char *response) {
 		path, HTTP_VER, host, CONNECTION, USER_AGENT, ACCEPT
 	);
 
-	fprintf(stderr, "Request header:\n%s\n", header);
+	free(path);
+
+	if (PRINTERR) {
+		fprintf(stderr, "Request header:\n%s\n", header);
+	}
 
 	// Send HTTP request to server
 	sockfd = establish(host, PORT, header);
@@ -184,9 +195,11 @@ int http_get(char *url, char *response) {
 		return *sockfd;
 	}
 
-	//fprintf(stderr, "Connected to %s, request header:\n%s\n\n", _url->host, header);
-	fprintf(stderr, "Connected to %s. ", host);
+	if (PRINTERR) {
+		fprintf(stderr, "Connected to %s, request header:\n%s\n\n", host, header);
+	}
 
+	free(host);
 	free(header);
 
 	// Get response header
@@ -194,6 +207,10 @@ int http_get(char *url, char *response) {
 
 	if (bytes_read < 0) {
 		return (int)bytes_read;
+	}
+
+	if (PRINTERR) {
+		fprintf(stderr, "Response header:\n%s\n\n", response);
 	}
 
 	// HTTP status code
@@ -209,8 +226,9 @@ int http_get(char *url, char *response) {
 		return CONTENT_TYPE_NA;
 	}
 
-	fprintf(stderr, "Response header:\n%s\n", response);
-	//fprintf(stderr, "Status: %d\n", status);
+	if (PRINTERR) {
+		fprintf(stderr, "Response header:\n%s\n", response);
+	}
 
 	// Handle status codes
 	switch (status) {
@@ -222,16 +240,11 @@ int http_get(char *url, char *response) {
 		case 301:
 			get_location(url, response);
 			close_socket(sockfd);
-			return http_get(url, response);
+			return http_get(url, response, flag);
 		
 		default:
 			break;
 	}
-
-
-	// if (status != 200) {
-	// 	return status;
-	// }
 
 	expected_length = get_content_length(response);
 
@@ -240,11 +253,16 @@ int http_get(char *url, char *response) {
 							   get_chunked_response(sockfd, response, &expected_length) :
 							   read_response(sockfd, response, NULL, expected_length);
 	
-	fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+	if (PRINTERR) {
+		fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
+	}
 
 	if (expected_length != bytes_read) {
 
-		fprintf(stderr, "Truncated response.\n");
+		if (PRINTERR) {
+			fprintf(stderr, "Truncated response.\n");
+		}
+		*flag = TRUNCATED;
 	}
 
 	close_socket(sockfd);

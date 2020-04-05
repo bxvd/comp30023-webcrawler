@@ -69,7 +69,7 @@ void setup_socket(int *sockfd, struct hostent *addr, int port) {
  * Returns int*: Pointer to a socket file descriptor.
  */
 int *establish(char *host, int port, char *header) {
-
+	
 	// Persistent sockfd to keep socket open
 	int *sockfd = (int*)malloc(sizeof(int));
 

@@ -9,8 +9,9 @@ ODIR = ./obj
 LIBS = libgumbo.a
 
 # Compiler
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra -I$(IDIR)
+CMFLAGS = -fsanitize=address -g -O1 -Wall -Wextra -I$(IDIR)
 
 MKDIR = mkdir -p
 
@@ -45,7 +46,7 @@ clean:
 
 $(ODIR)/%.o: $(SDIR)/%.c
 	@$(MKDIR) $(@D)
-	@$(CC) -c -o $@ $< $(CFLAGS)
+	@$(CC) -c -o $@ $< $(CMFLAGS)
 
 $(EXE): $(OBJ)
-	@$(CC) $(LDIR)/$(LIBS) -o $@ $^ $(CFLAGS)
+	@$(CC) $(LDIR)/$(LIBS) -o $@ $^ $(CMFLAGS)
