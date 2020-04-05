@@ -18,9 +18,7 @@
 #include "http.h"
 #include "gumbo.h"
 
-#define PATH_IGNORE_STRINGS {"?", "#", "%", "./"}
-#define N_IGNORE_STRINGS    4
-#define MAX_STRING_LENGTH   2
+#define PATH_IGNORE_CHARS "?#%"
 
 #define MAX_RESPONSE_LENGTH 100000
 
@@ -74,6 +72,39 @@ void destroy_page(Page *page, int r) {
 	free (page);
 }
 
+int ignore_link(char *url, char *host) {
+
+	// Ignore URLs with functional characters in the path
+	for (int i = 0; i < strlen(PATH_IGNORE_CHARS); i++) {
+		if (strchr(url, PATH_IGNORE_CHARS[i]) != NULL) {
+			return IGNORE;
+		}
+	}
+
+	// URL is a relative path and needs to be filled out
+	if (url[0] == '/' || strstr(url, HOST_DELIMITER) == NULL) {
+
+		char *_url = stringify_url(2, url, host);
+
+		// Replace passed URL with a filled-out copy
+		memset(url, 0, MAX_URL_LENGTH);
+		memmove(url, _url, strlen(_url));
+
+		free(_url);
+	}
+
+	// Only visit pages if all but the first component of the host are the same
+	char *candidate[MAX_URL_LENGTH] = {0};
+	get_host(url, candidate);
+
+	// Compare host strings from where the first '.' is found
+	if (!strcmp(strstr(candidate, HOST_EL_DELIMITER), strstr(host, HOST_EL_DELIMITER))) {
+		return IGNORE;
+	}
+
+	return 0;
+}
+
 /*
  * Function: find_links
  * 
@@ -81,7 +112,7 @@ void destroy_page(Page *page, int r) {
  * 
  * GumboNode *node: HTML node as a Gumbo struct.
  */
-void find_links(GumboNode *node, FILE *links) {
+void find_links(GumboNode *node, Page *page, FILE *links) {
 
 	// End of document
 	if (node->type != GUMBO_NODE_ELEMENT) {
@@ -92,13 +123,24 @@ void find_links(GumboNode *node, FILE *links) {
 	GumboAttribute *href;
 	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
 
-		fprintf(links, "%s\n", href->value);
+		// Get elements of the href value to work with
+		char location[MAX_URL_LENGTH] = {0}, host[MAX_URL_LENGTH] = {0};
+		memmove(location, href->value, strlen(href->value));
+		get_host(page->location, host);
+
+		fprintf(links, "%s > ", href->value);
+
+		if (!ignore_link(location, host)) {
+			fprintf(links, "%s\n", location);
+		} else {
+			fprintf(links, "IGNORE\n");
+		}
 	}
 
 	// Current node is not a href, try its children
 	GumboVector *children = &node->v.element.children;
 	for (unsigned int i = 0; i < children->length; ++i) {
-		find_links((GumboNode*)children->data[i], links);
+		find_links((GumboNode*)children->data[i], page, links);
 	}
 }
 
@@ -112,20 +154,9 @@ void crawl(char *url) {
 
 	Page *head = get_page(url, NULL);
 	head->status = http_get(head->location, response, &head->flag);
-	// Page *head = (Page*)malloc(sizeof(Page));
-
-	// if (status == 200) {
-
-	// 	// Setup first page
-	// 	head->head = head;
-	// 	head->prev = NULL;
-	// 	head->next = NULL;
-	// 	head->location = url;
-	// 	head->status = status;
-	// }
 
 	GumboOutput *parsed_output = gumbo_parse(response);
-	find_links(parsed_output->root, links_output);
+	find_links(parsed_output->root, head, links_output);
 	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
 
 	fprintf(stderr, "Status: %d\n", head->status);
@@ -137,105 +168,3 @@ void crawl(char *url) {
 	fclose(response_output);
 	fclose(links_output);
 }
-
-
-// int should_ignore(char *url, char *host, char **pages, int n) {
-
-// 	const char path_ignore_strings[N_IGNORE_STRINGS][MAX_STRING_LENGTH] = PATH_IGNORE_STRINGS;
-
-// 	// Ignore non-basic URLs
-// 	for (int i = 0; i < N_IGNORE_STRINGS; i++) {
-// 		if (strstr(url, path_ignore_strings[i]) != NULL) {
-// 			return IGNORE;
-// 		}
-// 	}
-
-// 	// Fill out URLs that are path or file only
-// 	if (strstr(url, host) == NULL) {
-
-// 		char *_url = stringify_url(2, url, host);
-
-// 		memset(url, 0, MAX_URL_LENGTH);
-// 		memmove(url, _url, MAX_URL_LENGTH);
-
-// 		free(_url);
-
-// 		return should_ignore(url, host, pages, n);
-// 	}
-
-// 	for (int i = 0; i < n - 1; i++) {
-// 		if (!strcmp(url, pages[n])) {
-// 			return IGNORE;
-// 		}
-// 	}
-
-// 	return 0;
-// }
-
-// /*
-//  * Adapted from find_links.cc at https://github.com/google/gumbo-parser/tree/master/examples
-//  * 
-//  * Function: link_search
-//  * 
-//  * Recursive HTML node tree traverser finding all hrefs.
-//  * 
-//  * char **links:    Array to store search results.
-//  * int *n:          Number of links stored in 'links' so far.
-//  * GumboNode *root: Document root node as a Gumbo struct.
-//  */
-// void crawl_links(GumboNode *node, char *url, char **pages, int *n) {
-
-// 	if (node->type != GUMBO_NODE_ELEMENT) {
-// 		return;
-// 	}
-
-// 	char host[MAX_URL_LENGTH] = {0};
-// 	get_host(url, host);
-
-// 	GumboAttribute *href;
-// 	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
-
-// 		char *link = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
-// 		memset(link, 0, MAX_URL_LENGTH);
-// 		memmove(link, href->value, strlen(href->value));
-
-// 		fprintf(stderr, "Found link: %s\n", link);
-// 		if (!should_ignore(link, host, pages, *n)) {
-// 			crawl(link, pages, n);
-// 		}
-// 	}
-
-// 	// Traverse tree
-// 	GumboVector *children = &node->v.element.children;
-// 	for (unsigned int i = 0; i < children->length; ++i) {
-// 		crawl_links(children->data[i], url, pages, n);
-// 	}
-// }
-
-// int crawl(char *url, char **pages, int *n) {
-
-// 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
-
-// 	fprintf(stderr, "Fetching page: %s\n", url);
-
-// 	// Make GET request
-// 	int status = http_get(url, response);
-
-// 	// Handle HTTP status codes
-// 	if (status == 200) {
-// 		fprintf(stderr, "Adding fetched page: %s\n", url);
-// 		pages[*n] = (char*)malloc(strlen(url) * sizeof(char));
-// 		memmove(pages[(*n)++], url, strlen(url));
-// 	}
-
-// 	// Parse HTML
-// 	GumboOutput *output = gumbo_parse(response);
-
-// 	free(response);
-
-// 	crawl_links(output->root, url, pages, n);
-
-// 	gumbo_destroy_output(&kGumboDefaultOptions, output);
-
-// 	return NO_LINKS;
-// }

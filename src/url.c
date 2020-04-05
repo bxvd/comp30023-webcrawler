@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "url.h"
 
 #define INVALID_URL -5
@@ -77,6 +78,8 @@ int parse_url(char *url, URL *url_t) {
 
 void get_protocol(char *url, char *protocol) {
 
+	assert(url && protocol);
+
 	char *element_end = strstr(url, PROTOCOL_DELIMITER);
 	char *element_start = element_end == NULL ? DEFAULT_PROTOCOL : url;
 	int element_length = element_end == NULL ? strlen(DEFAULT_PROTOCOL) : element_end - url;
@@ -85,6 +88,8 @@ void get_protocol(char *url, char *protocol) {
 }
 
 void get_host(char *url, char *host) {
+
+	assert(url && host);
 
 	char *element_start = strstr(url, PROTOCOL_DELIMITER);
 	element_start = element_start == NULL ? url : element_start + strlen(PROTOCOL_DELIMITER);
@@ -96,6 +101,8 @@ void get_host(char *url, char *host) {
 }
 
 void get_path(char *url, char *path) {
+
+	assert(url && path);
 
 	char *element_start = strstr(url, PROTOCOL_DELIMITER);
 	element_start = element_start == NULL ? url : strstr(element_start + strlen(PROTOCOL_DELIMITER), HOST_DELIMITER);
@@ -118,24 +125,29 @@ void get_path(char *url, char *path) {
  */
 char *stringify_url(int n, char *path, ...) {
 
+	assert(n <= 3);
+	assert(path != NULL);
+
 	// Handle variable number of arguments
 	va_list ap;
 	va_start(ap, path);
 
-	char *host = n >= 2 ? va_arg(ap, char*) : "\0";
-	char *protocol = n == 3 ? va_arg(ap, char*) : "http";
+	char *host = n >= 2 ? va_arg(ap, char*) : NULL;
+	char *protocol = n == 3 ? va_arg(ap, char*) : strstr(host, PROTOCOL_DELIMITER) == NULL ? "http" : NULL;
 
 	// Set protocol delimiter
-	char *pd = strcmp(protocol, "mailto") ? "://" : ":";
+	char *pd = protocol == NULL ? NULL : strcmp(protocol, "mailto") ? "://" : ":";
 
 	// Add host delimiter if path is file only
-	char *hd = path[0] != HOST_DELIMITER[0] ? HOST_DELIMITER : "";
+	char *hd = (path[0] != HOST_DELIMITER[0]) && (host != NULL) ? HOST_DELIMITER : NULL;
+
 
 	// Allocate persistent memory
-	char *url = (char*)malloc((strlen(path) + strlen(hd) + strlen(host) + strlen(protocol) + strlen(pd)) * sizeof(char));
+	char *url = (char*)malloc(((protocol != NULL ? strlen(protocol):0) + (pd != NULL ? strlen(pd):0)
+							+ (host != NULL ? strlen(host):0)  + (hd != NULL ? strlen(hd):0) + strlen(path) + 1) * sizeof(char));
 
 	// Concatenate strings
-	sprintf(url, "%s%s%s%s%s", protocol, pd, host, hd, path);
+	sprintf(url, "%s%s%s%s%s", (protocol != NULL ? protocol:""), (pd != NULL ? pd:""), (host != NULL ? host:""), (hd != NULL ? hd:""), path);
 
 	return url;
 }

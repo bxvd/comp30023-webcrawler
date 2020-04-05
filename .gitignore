@@ -1,7 +1,7 @@
-obj/
 .DS_Store
+.VSCodeCounter
+obj/
 crawler
 *.pdf
 *.txt
 *.html
-src/regex.c
