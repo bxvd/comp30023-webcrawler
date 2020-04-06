@@ -55,7 +55,7 @@ int parse_url(char *url, URL *url_t) {
 	// Get host
 	element_start = element_end;
 	element_end = strstr(element_start, HOST_DELIMITER);
-	element_length = element_end == NULL ? strlen(element_start) : element_end - element_start;
+	element_length = element_end == NULL ? strlen(element_start) : (size_t)element_end - (size_t)element_start;
 
 	//fprintf(stderr, "    Start: %s, length: %d\n", element_start, element_length);
 
@@ -82,7 +82,7 @@ void get_protocol(char *url, char *protocol) {
 
 	char *element_end = strstr(url, PROTOCOL_DELIMITER);
 	char *element_start = element_end == NULL ? DEFAULT_PROTOCOL : url;
-	int element_length = element_end == NULL ? strlen(DEFAULT_PROTOCOL) : element_end - url;
+	int element_length = element_end == NULL ? strlen(DEFAULT_PROTOCOL) : (size_t)element_end - (size_t)url;
 
 	memmove(protocol, element_start, element_length);
 }

@@ -251,7 +251,7 @@ void crawl(char *url) {
 	Page *page, *head = get_page(url, NULL);
 	head->status = http_get(head->location, response, &head->flag);
 
-	fprintf(stdout, "Visiting %s\n", page->location);
+	fprintf(stdout, "Visiting %s\n", head->location);
 	parse(response, head);
 
 	page = head;
