@@ -223,7 +223,6 @@ void find_links(GumboNode *node, Page *page) {
 		get_host(page->location, host);
 
 		if (!ignore_link(location, host) && !exists(location, page)) {
-			fprintf(stderr, "%s\n", href->value);
 			add_page(get_page(location, page));
 		}
 	}
@@ -250,21 +249,17 @@ void crawl(char *url) {
 	Page *page, *head = get_page(url, NULL);
 	head->status = http_get(head->location, response, &head->flag);
 
-	if (head->status == 200 || head->status == 404) {
-		fprintf(stdout, "%s\n", page->location);
-		parse(response, head);
-	}
+	fprintf(stdout, "Visiting %s\n", page->location);
+	parse(response, head);
 
 	page = head;
 
 	while ((page = page->next)) {
 
-		fprintf(stdout, "%s\n", page->location);
+		fprintf(stdout, "Visiting %s\n", page->location);
 		page->status = http_get(page->location, response, &page->flag);
 
-		if (page->status == 200 || page->status == 404) {
-			parse(response, page);
-		}
+		parse(response, page);
 	}
 
 	destroy_page(head, RECURSIVE);
