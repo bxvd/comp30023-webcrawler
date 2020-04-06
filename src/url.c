@@ -76,6 +76,14 @@ int parse_url(char *url, URL *url_t) {
 	return (url_t->protocol == NULL || url_t->host == NULL || url_t->path == NULL) ? INVALID_URL : 0;
 }
 
+/*
+ * Function: get_protocol
+ * 
+ * Takes in a URL string and extracts the protocol.
+ * 
+ * char *url:  URL string.
+ * char *host: Pointer to memory location for the protocol.
+ */
 void get_protocol(char *url, char *protocol) {
 
 	assert(url && protocol);
@@ -87,27 +95,55 @@ void get_protocol(char *url, char *protocol) {
 	memmove(protocol, element_start, element_length);
 }
 
+/*
+ * Function: get_host
+ * 
+ * Takes in a URL string and extracts the hostname.
+ * 
+ * char *url:  URL string.
+ * char *host: Pointer to memory location for the hostname.
+ */
 void get_host(char *url, char *host) {
 
 	assert(url && host);
 
+	// URL begins with a protocol
 	char *element_start = strstr(url, PROTOCOL_DELIMITER);
+	
+	// URL begins with '//'
+	element_start = element_start == NULL ? strstr(url, LOCATION_DELIMITER) : element_start;
+
+	// URL begins with the hostname
 	element_start = element_start == NULL ? url : element_start + strlen(PROTOCOL_DELIMITER);
 
 	char *element_end = strstr(element_start, HOST_DELIMITER);
 	element_end = element_end == NULL ? (url + strlen(url)) : element_end;
 
-	//if (element_start[(url + strlen(url))])
-
 	memmove(host, element_start, element_end - element_start);
 }
 
+/*
+ * Function: get_path
+ * 
+ * Takes in a URL string and extracts the path.
+ * 
+ * char *url:  URL string.
+ * char *host: Pointer to memory location for the path.
+ */
 void get_path(char *url, char *path) {
 
 	assert(url && path);
 
+	// URL begins with a protocol
 	char *element_start = strstr(url, PROTOCOL_DELIMITER);
+
+	// URL begins with '//'
+	element_start = element_start == NULL ? strstr(url, LOCATION_DELIMITER) : element_start;
+
+	// URL begins with the hostname
 	element_start = element_start == NULL ? url : strstr(element_start + strlen(PROTOCOL_DELIMITER), HOST_DELIMITER);
+
+	// URL doesn't contain a path at all
 	element_start = element_start == NULL ? DEFAULT_PATH : element_start + strlen(HOST_DELIMITER) - 1;
 
 	memmove(path, element_start, strlen(element_start));
@@ -119,7 +155,7 @@ void get_path(char *url, char *path) {
  * Generates a valid URL string.
  * 
  *            int n:          Number of url arguments passed.
- *            char *path:     Path to resource (or the hostname if no path).
+ *            char *path:     Path to resource (or the the URL itself to be stringified).
  * (optional) char *host:     Hostname.
  * (optional) char *protocol: Protocol to be used ('http' if none provided).
  * 

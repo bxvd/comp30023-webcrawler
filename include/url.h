@@ -5,6 +5,7 @@
 #define PROTOCOL_DELIMITER "://"
 #define HOST_DELIMITER     "/"
 #define HOST_EL_DELIMITER  "."
+#define LOCATION_DELIMITER "//"
 
 typedef struct URL {
 	char *path;

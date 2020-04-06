@@ -20,7 +20,6 @@
 
 #define PATH_IGNORE_CHARS "?#%"
 #define RELATIVE_DIR      "./"
-#define INVALID_DIR       "//"
 
 #define MAX_RESPONSE_LENGTH 100000
 
@@ -133,11 +132,28 @@ int ignore_link(char *url, char *host) {
 		return IGNORE;
 	}
 
+	// Handle '//' URL beginnings
+	if (strstr(url, LOCATION_DELIMITER) == url) {
+
+		// Rebuild URL to be nicer
+		char host[MAX_URL_LENGTH] = {0}, path[MAX_URL_LENGTH] = {0};
+		get_host(url, host);
+		get_path(url, path);
+
+		char *_url = stringify_url(2, host, path);
+
+		// Replace passed URL with a filled-out copy
+		memset(url, 0, MAX_URL_LENGTH);
+		memmove(url, _url, strlen(_url));
+
+		free(_url);
+	}
+
 	// Ignore invalid directories
 	char path[MAX_URL_LENGTH] = {0};
 	get_path(url, path);
 
-	if (strstr(path, INVALID_DIR)) {
+	if (strstr(path, LOCATION_DELIMITER)) {
 		return IGNORE;
 	}
 
