@@ -95,7 +95,9 @@ void get_host(char *url, char *host) {
 	element_start = element_start == NULL ? url : element_start + strlen(PROTOCOL_DELIMITER);
 
 	char *element_end = strstr(element_start, HOST_DELIMITER);
-	element_end = element_end == NULL ? (url + strlen(url) - 1) : element_end;
+	element_end = element_end == NULL ? (url + strlen(url)) : element_end;
+
+	//if (element_start[(url + strlen(url))])
 
 	memmove(host, element_start, element_end - element_start);
 }
