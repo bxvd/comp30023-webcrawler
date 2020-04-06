@@ -7,7 +7,7 @@ LDIR = ./lib
 ODIR = ./obj
 
 # Compiler
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra -I$(IDIR) 
 SANITISE = -fsanitize=address -g -O1
 
@@ -33,6 +33,7 @@ EXE = crawler
 TEST1 = http://ibdhost.com/help/html/
 TEST2 = google.com
 TEST3 = https://webhook.site/a6e635ec-e82e-4ef8-b94c-20820b1d823e
+TEST4 = http://web1.comp30023
 
 # Look in lib for extra header files
 vpath %.h $(LIBDIR)
@@ -50,6 +51,9 @@ test2: all
 test3: all
 	@./$(EXE) $(TEST3)
 
+test4: all
+	@./$(EXE) $(TEST4)
+
 clean:
 	@rm -r -f $(ODIR) $(EXE)
 
@@ -64,7 +68,7 @@ gumbo: $(LIBO)
 # Build src files
 $(ODIR)/%.o: $(SDIR)/%.c
 	@$(MKDIR) $(@D)
-	@$(CC) -c -o $@ $< $(CFLAGS)
+	@$(CC) -c -o $@ $< $(CFLAGS) $(SANITISE)
 
 # Build lib src files
 $(ODIR)/%.o: $(LIBDIR)/%.c
@@ -72,4 +76,4 @@ $(ODIR)/%.o: $(LIBDIR)/%.c
 	@$(CC) -c -o $@ $< -I$(IDIR)
 
 $(EXE): $(OBJ)
-	@$(CC) -o $@ $^ $(CFLAGS)
+	@$(CC) -o $@ $^ $(CFLAGS) $(SANITISE)

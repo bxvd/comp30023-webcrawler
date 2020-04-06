@@ -6,7 +6,7 @@
 #include "url.h"
 #include "client.h"
 
-#define PRINTERR 0
+#define PRINTERR 1
 
 // Search strings
 #define CONTENT_LENGTH  "Content-Length: "

@@ -23,7 +23,7 @@
 
 #define MAX_RESPONSE_LENGTH 100000
 
-#define GITLAB_TEST 1
+#define SUBMISSION 1
 
 #define NO_LINKS  0
 #define IGNORE    1
@@ -148,7 +148,7 @@ int ignore_link(char *url, char *host) {
 	char candidate[MAX_URL_LENGTH] = {0};
 	get_host(url, candidate);
 
-	if (!GITLAB_TEST) {
+	if (!SUBMISSION) {
 
 		// Handle cases where the original host is only 'name.TLD'
 		int n_host = 0, n_candidate = 0;
