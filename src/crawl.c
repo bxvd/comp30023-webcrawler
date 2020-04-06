@@ -250,7 +250,7 @@ void crawl(char *url) {
 	Page *page, *head = get_page(url, NULL);
 	head->status = http_get(head->location, response, &head->flag);
 
-	if (head->status == 200) {
+	if (head->status == 200 || head->status == 404) {
 		parse(response, head);
 	}
 
@@ -261,7 +261,7 @@ void crawl(char *url) {
 		page->status = http_get(page->location, response, &page->flag);
 		fprintf(stdout, "%s\n", page->location);
 
-		if (page->status == 200) {
+		if (page->status == 200 || page->status == 404) {
 			parse(response, page);
 		}
 	}

@@ -27,7 +27,7 @@
  * struct hostent *addr: Parsed destination IP address.
  * int port:             Destination port number.
  */
-void setup_socket(int sockfd, struct hostent *addr, int port) {
+void setup_socket(int *sockfd, struct hostent *addr, int port) {
 
 	struct sockaddr_in server_addr;
 
@@ -45,14 +45,14 @@ void setup_socket(int sockfd, struct hostent *addr, int port) {
 
 	*sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (sockfd < 0) {
-		sockfd = SOCKET_ERROR;
+	if (*sockfd < 0) {
+		*sockfd = SOCKET_ERROR;
 		return;
 	}
 
 	// Set up connection
-	if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-		sockfd = CONNECTION_ERROR;
+	if (connect(*sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+		*sockfd = CONNECTION_ERROR;
 		return;
 	}
 }
@@ -82,7 +82,7 @@ int establish(char *host, int port, char *header) {
 		return sockfd;
 	}
 
-	setup_socket(sockfd, addr, port);
+	setup_socket(&sockfd, addr, port);
 
 	// Problem setting up socket
 	if (sockfd < 0) {

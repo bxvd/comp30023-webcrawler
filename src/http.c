@@ -209,6 +209,7 @@ int http_get(char *url, char *response, char *flag) {
 	bytes_read = read_response(sockfd, response, HEADER_BOUNDARY, HEADER_MODE);
 
 	if (bytes_read < 0) {
+		close_socket(sockfd);
 		return (int)bytes_read;
 	}
 
@@ -228,11 +229,7 @@ int http_get(char *url, char *response, char *flag) {
 	// 		) == NULL) {
 	// 	return CONTENT_TYPE_NA;
 	// }
-
-	// Handle status codes
-	if (status != 200) {
-		return status;
-	}
+	
 	// switch (status) {
 
 	// 	/*
