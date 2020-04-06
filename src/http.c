@@ -16,7 +16,7 @@
 #define END_OF_LINE     "\r\n"
 
 // Memory allocations
-#define MAX_HEADER_LENGTH   256
+#define MAX_HEADER_LENGTH   1000
 #define MAX_RESPONSE_LENGTH 100000
 #define CHUNK_HEADER_LENGTH 10
 
@@ -95,7 +95,7 @@ char *get_content_type(char *response) {
  * 
  * Returns long: Length of chunk in bytes.
  */
-long get_chunk_length(int *sockfd) {
+long get_chunk_length(int sockfd) {
 	
 	/*
 	 * Chunk headers are expressed as a hex string terminated by CRLF.
@@ -119,7 +119,7 @@ long get_chunk_length(int *sockfd) {
  * 
  * Returns long: Actual bytes read from the server.
  */
-long get_chunked_response(int *sockfd, char *response, long *expected_length) {
+long get_chunked_response(int sockfd, char *response, long *expected_length) {
 
 	if (PRINTERR) {
 		fprintf(stderr, "Begin chunked transfer.\n");
@@ -165,7 +165,7 @@ int http_get(char *url, char *response, char *flag) {
 	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
 	char *host = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
 	char *path = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
-	int *sockfd, status;
+	int sockfd, status;
 	long bytes_read, expected_length = 0;
 
 	memset(response, 0, MAX_RESPONSE_LENGTH);
@@ -194,8 +194,8 @@ int http_get(char *url, char *response, char *flag) {
 	// Send HTTP request to server
 	sockfd = establish(host, PORT, header);
 
-	if (*sockfd < 0) {
-		return *sockfd;
+	if (sockfd < 0) {
+		return sockfd;
 	}
 
 	if (PRINTERR) {

@@ -18,8 +18,9 @@
 #include "http.h"
 #include "gumbo.h"
 
-#define PATH_IGNORE_CHARS  "?#%"
-#define PATH_IGNORE_STRING "./"
+#define PATH_IGNORE_CHARS "?#%"
+#define RELATIVE_DIR      "./"
+#define INVALID_DIR       "//"
 
 #define MAX_RESPONSE_LENGTH 100000
 
@@ -128,7 +129,15 @@ int ignore_link(char *url, char *host) {
 	}
 
 	// Ignore relative directories
-	if (strstr(url, PATH_IGNORE_STRING)) {
+	if (strstr(url, RELATIVE_DIR)) {
+		return IGNORE;
+	}
+
+	// Ignore invalid directories
+	char path[MAX_URL_LENGTH] = {0};
+	get_path(url, path);
+
+	if (strstr(path, INVALID_DIR)) {
 		return IGNORE;
 	}
 
@@ -171,7 +180,8 @@ int ignore_link(char *url, char *host) {
 	} else {
 
 		// Compare host strings from where the first '.' is found
-		if (!strcmp(strstr(host, HOST_EL_DELIMITER), strstr(candidate, HOST_EL_DELIMITER))) {
+		if (strcmp(strstr(host, HOST_EL_DELIMITER), strstr(candidate, HOST_EL_DELIMITER))) {
+
 			return IGNORE;
 		}
 	}
@@ -213,6 +223,7 @@ void find_links(GumboNode *node, Page *page) {
 		get_host(page->location, host);
 
 		if (!ignore_link(location, host) && !exists(location, page)) {
+			fprintf(stderr, "%s\n", href->value);
 			add_page(get_page(location, page));
 		}
 	}

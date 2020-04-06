@@ -27,7 +27,7 @@
  * struct hostent *addr: Parsed destination IP address.
  * int port:             Destination port number.
  */
-void setup_socket(int *sockfd, struct hostent *addr, int port) {
+void setup_socket(int sockfd, struct hostent *addr, int port) {
 
 	struct sockaddr_in server_addr;
 
@@ -45,14 +45,14 @@ void setup_socket(int *sockfd, struct hostent *addr, int port) {
 
 	*sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-	if (*sockfd < 0) {
-		*sockfd = SOCKET_ERROR;
+	if (sockfd < 0) {
+		sockfd = SOCKET_ERROR;
 		return;
 	}
 
 	// Set up connection
-	if (connect(*sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-		*sockfd = CONNECTION_ERROR;
+	if (connect(sockfd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+		sockfd = CONNECTION_ERROR;
 		return;
 	}
 }
@@ -68,28 +68,29 @@ void setup_socket(int *sockfd, struct hostent *addr, int port) {
  * 
  * Returns int*: Pointer to a socket file descriptor.
  */
-int *establish(char *host, int port, char *header) {
+int establish(char *host, int port, char *header) {
 	
 	// Persistent sockfd to keep socket open
-	int *sockfd = (int*)malloc(sizeof(int));
+	//int *sockfd = (int*)malloc(sizeof(int));
+	int sockfd = 0;
 
 	// Get IP address from host name
 	struct hostent *addr = gethostbyname(host);
 
 	if (addr == NULL) {
-		*sockfd = SERVER_NOT_FOUND;
+		sockfd = SERVER_NOT_FOUND;
 		return sockfd;
 	}
 
 	setup_socket(sockfd, addr, port);
 
 	// Problem setting up socket
-	if (*sockfd < 0) {
+	if (sockfd < 0) {
 		return sockfd;
 	}
 
 	// Send request header
-	write(*sockfd, header, strlen(header));
+	write(sockfd, header, strlen(header));
 
 	return sockfd;
 }
@@ -106,7 +107,7 @@ int *establish(char *host, int port, char *header) {
  * 
  * Returns long: Length of data read in bytes.
  */
-long read_response(int *sockfd, char *response, char *boundary, long content_length) {
+long read_response(int sockfd, char *response, char *boundary, long content_length) {
 
 	/*
 	 * Function is in header mode when content_length = 1.
@@ -120,11 +121,13 @@ long read_response(int *sockfd, char *response, char *boundary, long content_len
 
 	while (bytes_read < content_length) {
 
-		bytes_read += read(*sockfd, response + bytes_read, buffer_length);
+		bytes_read += read(sockfd, response + bytes_read, buffer_length);
 		
 		// Check if a boundary string has been encountered
-		if ((bytes_read >= (long)strlen(boundary)) && (strstr(response, boundary) != NULL)) {
-			return bytes_read;
+		if (boundary) {
+			if (bytes_read >= (long)strlen(boundary) && strstr(response, boundary)) {
+				return bytes_read;
+			}
 		}
 
 		// Prevent reading more bytes than expected
@@ -139,7 +142,7 @@ long read_response(int *sockfd, char *response, char *boundary, long content_len
  * 
  * int *sockfd: Socket file descriptor.
  */
-void close_socket(int *sockfd) {
-	close(*sockfd);
-	free(sockfd);
+void close_socket(int sockfd) {
+	close(sockfd);
+	//free(sockfd);
 }
