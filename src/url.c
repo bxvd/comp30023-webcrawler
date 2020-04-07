@@ -80,8 +80,7 @@ void get_path(char *url, char *path) {
 		element_start += element_start ? strlen(LOCATION_DELIMITER) : 0;
 	}
 
-	// URL begins with the hostname
-	element_start = element_start ? element_start : strstr(url, HOST_DELIMITER);
+	element_start = element_start ? strstr(element_start, HOST_DELIMITER) : strstr(url, HOST_DELIMITER);
 
 	// URL doesn't contain a path at all
 	element_start = element_start ? element_start : DEFAULT_PATH;
