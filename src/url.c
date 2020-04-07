@@ -69,18 +69,19 @@ void get_path(char *url, char *path) {
 
 	assert(url && path);
 
+	// URL begins with a protocol
 	char *element_start = strstr(url, PROTOCOL_DELIMITER);
+	element_start += element_start ? strlen(PROTOCOL_DELIMITER) : 0;
+	
+	if (element_start == NULL) {
 
-	if (element_start) {
-		// URL begins with a protocol
-		element_start += strlen(PROTOCOL_DELIMITER);
-	} else if ((element_start = strstr(url, LOCATION_DELIMITER))) {
 		// URL begins with '//'
-		element_start += strlen(LOCATION_DELIMITER);
-	} else {
-		// URL begins with the hostname
-		element_start = strstr(url, HOST_DELIMITER);
+		element_start = strlen(LOCATION_DELIMITER);
+		element_start += element_start ? strlen(LOCATION_DELIMITER) : 0;
 	}
+
+	// URL begins with the hostname
+	element_start = element_start ? element_start : strstr(url, HOST_DELIMITER);
 
 	// URL doesn't contain a path at all
 	element_start = element_start ? element_start : DEFAULT_PATH;
