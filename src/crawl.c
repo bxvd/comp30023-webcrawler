@@ -252,6 +252,8 @@ void find_links(GumboNode *node, Page *page) {
 
 void parse(char *response, Page *page) {
 
+	fprintf(stderr, "\nResponse contents ------------\n%s\n------------------------------\n", response);
+
 	GumboOutput *parsed_output = gumbo_parse(response);
 	find_links(parsed_output->root, page);
 	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
