@@ -9,6 +9,6 @@
 #define TRUNCATED       'T'
 #define CONTENT_TYPE_NA 'M'
 
-#define PRINTERR 0
+#define PRINTERR 1
 
 int http_get(char *url, char *response, char *flag);
