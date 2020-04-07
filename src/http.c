@@ -246,6 +246,7 @@ int http_get(char *url, char *response, char *flag) {
 	expected_length = get_content_length(response);
 
 	// Read content from server
+	memset(response, 0, MAX_RESPONSE_LENGTH);
 	bytes_read = expected_length == CHUNKED ?
 							   get_chunked_response(sockfd, response, &expected_length) :
 							   read_response(sockfd, response, NULL, expected_length);
