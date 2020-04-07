@@ -76,7 +76,7 @@ void get_path(char *url, char *path) {
 	if (element_start == NULL) {
 
 		// URL begins with '//'
-		element_start = strlen(LOCATION_DELIMITER);
+		element_start = strstr(url, LOCATION_DELIMITER);
 		element_start += element_start ? strlen(LOCATION_DELIMITER) : 0;
 	}
 
