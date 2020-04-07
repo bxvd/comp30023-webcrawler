@@ -7,9 +7,10 @@ LDIR = ./lib
 ODIR = ./obj
 
 # Compiler
-CC = gcc
+CC = clang
 CFLAGS = -Wall -Wextra -I$(IDIR) 
 SANITISE = -fsanitize=address -g -O1
+S = $(SANITISE)
 
 MKDIR = mkdir -p
 CP = cp -r -n
@@ -68,7 +69,7 @@ gumbo: $(LIBO)
 # Build src files
 $(ODIR)/%.o: $(SDIR)/%.c
 	@$(MKDIR) $(@D)
-	@$(CC) -c -o $@ $< $(CFLAGS)
+	@$(CC) -c -o $@ $< $(CFLAGS) $(S)
 
 # Build lib src files
 $(ODIR)/%.o: $(LIBDIR)/%.c
@@ -76,4 +77,4 @@ $(ODIR)/%.o: $(LIBDIR)/%.c
 	@$(CC) -c -o $@ $< -I$(IDIR)
 
 $(EXE): $(OBJ)
-	@$(CC) -o $@ $^ $(CFLAGS)
+	@$(CC) -o $@ $^ $(CFLAGS) $(S)

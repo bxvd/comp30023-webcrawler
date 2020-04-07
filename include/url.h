@@ -13,7 +13,6 @@ typedef struct URL {
 	char *protocol;
 } URL;
 
-int parse_url(char *url, URL *url_t);
 void get_protocol(char *url, char *protocol);
 void get_host(char *url, char *host);
 void get_path(char *url, char *path);
