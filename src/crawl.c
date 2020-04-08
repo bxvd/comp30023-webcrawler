@@ -279,6 +279,7 @@ void crawl(char *url) {
 	}
 
 	parse(response, head);
+	fprintf(stderr, "Status %d\n%s\n", head->status, response);
 
 	page = head;
 
@@ -293,6 +294,7 @@ void crawl(char *url) {
 		page->status = http_get(page->location, response, &page->flag);
 
 		parse(response, page);
+		fprintf(stderr, "Status %d\n%s\n", page->status, response);
 	}
 
 	destroy_page(head, RECURSIVE);
