@@ -1,7 +1,8 @@
 .DS_Store
-.vscode
-.VSCodeCounter
+.vscode/
+.VSCodeCounter/
 obj/
+test-server/
 crawler
 *.pdf
 *.txt
