@@ -34,7 +34,7 @@ EXE = crawler
 TEST1 = http://ibdhost.com/help/html/
 TEST2 = google.com
 TEST3 = https://webhook.site/a6e635ec-e82e-4ef8-b94c-20820b1d823e
-TEST4 = http://web1.comp30023
+TEST4 = http://localhost/camel.html
 
 # Look in lib for extra header files
 vpath %.h $(LIBDIR)

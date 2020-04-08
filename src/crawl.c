@@ -196,8 +196,11 @@ int ignore_link(char *url, char *host) {
 	} else {
 
 		// Compare host strings from where the first '.' is found
-		if (strcmp(strstr(host, HOST_EL_DELIMITER), strstr(candidate, HOST_EL_DELIMITER))) {
-
+		if (strstr(host, HOST_EL_DELIMITER) && strstr(candidate, HOST_EL_DELIMITER)) {
+			if (strcmp(strstr(host, HOST_EL_DELIMITER), strstr(candidate, HOST_EL_DELIMITER))) {
+				return IGNORE;
+			}
+		} else if (strcmp(host, candidate)) {
 			return IGNORE;
 		}
 	}
