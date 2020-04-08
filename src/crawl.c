@@ -255,7 +255,9 @@ void find_links(GumboNode *node, Page *page) {
 
 void parse(char *response, Page *page) {
 
-	fprintf(stderr, "\nResponse contents ------------\n%s\n------------------------------\n", response);
+	if (PRINTERR) {
+		fprintf(stderr, "\nResponse contents ------------\n%s\n------------------------------\n", response);
+	}
 
 	GumboOutput *parsed_output = gumbo_parse(response);
 	find_links(parsed_output->root, page);
@@ -271,9 +273,11 @@ void crawl(char *url) {
 	head->status = http_get(head->location, response, &head->flag);
 
 	if (PRINTERR) {
-			fprintf(stderr, "Visiting %s\n", head->location);
-		}
-	//fprintf(stdout, "%s\n", head->location);
+		fprintf(stderr, "Visiting %s\n", head->location);
+	} else {
+		fprintf(stdout, "%s\n", head->location);
+	}
+
 	parse(response, head);
 
 	page = head;
@@ -282,8 +286,9 @@ void crawl(char *url) {
 
 		if (PRINTERR) {
 			fprintf(stderr, "Visiting %s\n", page->location);
+		} else {
+			fprintf(stderr, "%s\n", page->location);
 		}
-		//fprintf(stderr, "%s\n", page->location);
 
 		page->status = http_get(page->location, response, &page->flag);
 
