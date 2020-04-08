@@ -249,15 +249,11 @@ void find_links(GumboNode *node, Page *page) {
 	// Current node is not a href, try its children
 	GumboVector *children = &node->v.element.children;
 	for (unsigned int i = 0; i < children->length; ++i) {
-		find_links((GumboNode*)children->data[i], page);
+		find_links((GumboNode*)children->data[i], page->next ? page->next : page);
 	}
 }
 
 void parse(char *response, Page *page) {
-
-	if (PRINTERR) {
-		fprintf(stderr, "\nResponse contents ------------\n%s\n------------------------------\n", response);
-	}
 
 	GumboOutput *parsed_output = gumbo_parse(response);
 	find_links(parsed_output->root, page);
