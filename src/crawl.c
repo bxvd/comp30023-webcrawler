@@ -1,8 +1,8 @@
 /*
  * Source file: crawl.c
  * 
- * Handles and dispatches all crawl logic and memory handling for the
- * crawler program.
+ * Handles and dispatches all crawl logic and most of the memory
+ * handling for the crawler program.
  * 
  * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
  * 
@@ -85,6 +85,7 @@ int ignore_link(char *url, char *host) {
  * Recursive HTML node tree traverser finding all hrefs.
  * 
  * GumboNode *node: HTML node as a Gumbo struct.
+ * Page *page:      Page in a linked list.
  */
 void find_links(GumboNode *node, Page *page) {
 
@@ -130,6 +131,14 @@ void find_links(GumboNode *node, Page *page) {
 	}
 }
 
+/*
+ * Function: parse
+ * 
+ * Dispatches HTML parsing and linked list handling.
+ * 
+ * char *response: HTML content response.
+ * Page *page:     Page in a linked list.
+ */
 void parse(char *response, Page *page) {
 
 	GumboOutput *parsed_output = gumbo_parse(response);

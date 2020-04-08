@@ -6,9 +6,11 @@ IDIR = ./include
 LDIR = ./lib
 ODIR = ./obj
 
+# Sanitise flags, use with gcc
+SANITISE = -fsanitize=address -g -O1
+
 # Compiler
 CC = gcc
-SANITISE = -fsanitize=address -g -O1
 CFLAGS = -Wall -Wextra -I$(IDIR)
 
 MKDIR = mkdir -p
@@ -30,10 +32,7 @@ EXE = crawler
 
 # Runtime args
 # Used for debugging
-TEST1 = http://ibdhost.com/help/html/
-TEST2 = google.com
-TEST3 = https://webhook.site/a6e635ec-e82e-4ef8-b94c-20820b1d823e
-TEST4 = http://localhost/test-cases/basic/fully-connected-basic/bear/bird.html
+TEST1 = http://localhost/test-cases/basic/fully-connected-basic/bear/bird.html
 
 # Look in lib for extra header files
 vpath %.h $(LIBDIR)
@@ -44,15 +43,6 @@ all: clean libs $(EXE)
 
 test1: all
 	@./$(EXE) $(TEST1)
-
-test2: all
-	@./$(EXE) $(TEST2)
-
-test3: all
-	@./$(EXE) $(TEST3)
-
-test4: all
-	@./$(EXE) $(TEST4)
 
 clean:
 	@rm -r -f $(ODIR) $(EXE)
