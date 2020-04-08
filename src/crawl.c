@@ -278,9 +278,9 @@ void crawl(char *url) {
 	while ((page = page->next)) {
 
 		if (PRINTERR) {
-			fprintf(stderr, "Visiting ");
+			fprintf(stderr, "Visiting %s\n", page->location);
 		}
-		fprintf(stdout, "%s\n", page->location);
+		//fprintf(stderr, "%s\n", page->location);
 
 		page->status = http_get(page->location, response, &page->flag);
 
