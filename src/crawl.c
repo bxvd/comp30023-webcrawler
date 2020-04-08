@@ -150,9 +150,7 @@ void crawl(char *url) {
 
 	// Setup memory
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
-
 	Page *page, *head = get_page(url, NULL);
-	head->status = http_get(head->location, response, &head->flag);
 
 	if (PRINTERR) {
 		fprintf(stderr, "Visiting %s\n", head->location);
@@ -160,12 +158,15 @@ void crawl(char *url) {
 		fprintf(stdout, "%s\n", head->location);
 	}
 
-	parse(response, head);
-	fprintf(stderr, "Status %d\n%s\n", head->status, response);
+	head->status = http_get(head->location, response, &head->flag);
 
-	page = head;
+	if (head->flag == OK) {
+		parse(response, head);
+	}
 
-	while ((page = page->next)) {
+	// Traverse and generate linked list
+	page = head->next;
+	while (page) {
 
 		if (PRINTERR) {
 			fprintf(stderr, "Visiting %s\n", page->location);
@@ -175,9 +176,40 @@ void crawl(char *url) {
 
 		page->status = http_get(page->location, response, &page->flag);
 
-		parse(response, page);
-		fprintf(stderr, "Status %d\n%s\n", page->status, response);
+		if (page->flag == OK) {
+
+			parse(response, page);
+			page = page->next;
+
+			if (page) {
+				destroy_page(page->prev, 0);
+			}
+		}
 	}
+
+	// Re-attempt temporary errors
+	// page = head->next;
+	// while (page) {
+
+	// 	if (PRINTERR) {
+	// 		fprintf(stderr, "Visiting %s\n", page->location);
+	// 	} else {
+	// 		fprintf(stderr, "%s\n", page->location);
+	// 	}
+
+
+	// 	page->status = http_get(page->location, response, &page->flag);
+
+	// 	if (page->flag == OK) {
+
+	// 		parse(response, page);
+	// 		page = page->next;
+
+	// 		if (page) {
+	// 			destroy_page(page->prev, 0);
+	// 		}
+	// 	}
+	// }
 
 	destroy_page(head, RECURSIVE);
 

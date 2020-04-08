@@ -3,13 +3,13 @@
 
 ## Description
 The goal is to have implemented the functionality of:
-1. ~~Web crawling~~
-2. ~~TCP communication~~
-3. ~~HTML parsing~~
-4. ~~URL parsing~~
-5. Content-type and trancated response checking
-6. Correctly respond to status codes 200, 404, 410, 414, 503, 504
-7. Authentication
+1. TCP communication - *done*
+2. URL parsing - *done*
+3. HTML parsing - *done*
+4. Web crawling - *done*
+5. Content-type and trancated response checking - *done*
+6. Correctly respond to status codes 200, 404, 410, 414, 503, 504 - *done*
+7. Redirection and authentication - *Redirection done*
 
 ### Usage
 ```bash

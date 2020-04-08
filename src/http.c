@@ -2,25 +2,62 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <ctype.h>
 #include "http.h"
 #include "url.h"
 #include "client.h"
 
 // Search strings
-#define CONTENT_LENGTH  "Content-Length: "
-#define LOCATION        "Location: "
-#define CONTENT_TYPE    "Content-Type: "
+#define CONTENT_LENGTH  "content-length: "
+#define LOCATION        "location: "
+#define CONTENT_TYPE    "content-type: "
 #define HEADER_BOUNDARY "\r\n\r\n"
 #define END_OF_LINE     "\r\n"
 
 // Memory allocations
-#define MAX_HEADER_LENGTH   1000
+#define MAX_HEADER_LENGTH   4096
 #define MAX_RESPONSE_LENGTH 100000
 #define CHUNK_HEADER_LENGTH 10
 
 // Flags
-#define CHUNKED            -1
-#define INVALID_RESPONSE   -6
+#define CHUNKED          -1
+#define INVALID_RESPONSE -6
+
+/*
+ * Function: strlower
+ * 
+ * Copies bytes from src to dest as lowercase ASCII.
+ * 
+ * char *dest: Destination address.
+ * char *src:  Source address.
+ */
+void strlower(char *dest, char *src) {
+	for (int i = 0; i < (int)strlen(src); i++) {
+		dest[i] = tolower(src[i]);
+	}
+}
+
+/*
+ * Function: get_value
+ * 
+ * Finds where in the response header a field's value is located,
+ * maintaining any value case sensitivity.
+ * 
+ * char *response:    Server response header.
+ * const char *field: Field name to be searched for.
+ * 
+ * Returns char*: Pointer to location within response or NULL if not found.
+ */
+char *get_value(char *response, const char *field) {
+
+	char l_response[MAX_RESPONSE_LENGTH] = {0};
+	strlower(l_response, response);
+
+	fprintf(stderr, "Finding %s in %s\n", field, l_response);
+
+	// Count how many bytes into the lowercase response that the field was found
+	return (response + (strstr(l_response, field) - l_response) + strlen(field));
+}
 
 /*
  * Function: get_status
@@ -45,9 +82,10 @@ int get_status(char *response) {
  * Returns long: Chunked encoding flag or expected length of content.
  */
 long get_content_length(char *response) {
-	return strstr(response, CONTENT_LENGTH) == NULL ?
-				   CHUNKED :
-				   atol(strstr(response, CONTENT_LENGTH) + strlen(CONTENT_LENGTH));
+
+	char *content_length = get_value(response, CONTENT_LENGTH);
+
+	return content_length ? atol(content_length) : CHUNKED;
 }
 
 /*
@@ -60,8 +98,9 @@ long get_content_length(char *response) {
  */
 void get_location(char *url, char *response) {
 
-	char *location = strstr(response, LOCATION) + strlen(LOCATION);
+	char *location = get_value(response, LOCATION);
 
+	// Reset URL and use the new one
 	memset(url, 0, MAX_URL_LENGTH);
 	memmove(url, location, strstr(location, END_OF_LINE) - location);
 
@@ -73,15 +112,18 @@ void get_location(char *url, char *response) {
 /*
  * Function: get_content_type
  * 
- * Gets the MIME-type of the content to be received.
+ * Checks the MIME-type of the content to be received.
  * 
  * char *response: Server response header.
+ * char *accept:   MIME types the client can accept.
  * 
- * Returns char*: Pointer to location in response that specifies the content type.
+ * Returns int: 1 if content type is as passed, 0 otherwise.
  */
-char *get_content_type(char *response) {
+int is_content_type(char *response, char *accept) {
 
-	return strstr(response, CONTENT_TYPE) + strlen(CONTENT_TYPE);
+	char *content_type = get_value(response, CONTENT_TYPE);
+
+	return content_type ? strstr(content_type, accept) ? 1 : 0 : 0;
 }
 
 /*
@@ -160,16 +202,11 @@ long get_chunked_response(int sockfd, char *response, long *expected_length) {
 int http_get(char *url, char *response, char *flag) {
 
 	// Setup memory
-	char *header = (char*)malloc(MAX_HEADER_LENGTH * sizeof(char));
-	char *host = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
-	char *path = (char*)malloc(MAX_URL_LENGTH * sizeof(char));
+	char header[MAX_HEADER_LENGTH] = {0}, host[MAX_URL_LENGTH] = {0}, path[MAX_URL_LENGTH] = {0};
 	int sockfd, status;
 	long bytes_read, expected_length = 0;
 
 	memset(response, 0, MAX_RESPONSE_LENGTH);
-	memset(header, 0, MAX_HEADER_LENGTH);
-	memset(host, 0, MAX_URL_LENGTH);
-	memset(path, 0, MAX_URL_LENGTH);
 	
 	// Parse url string
 	get_host(url, host);
@@ -183,13 +220,11 @@ int http_get(char *url, char *response, char *flag) {
 		path, HTTP_VER, host, CONNECTION, USER_AGENT, ACCEPT
 	);
 
-	free(path);
-
 	if (PRINTERR) {
 		fprintf(stderr, "Request header:\n%s\n\n", header);
 	}
 
-	// Send HTTP request to server
+	// Establish connection and send HTTP request to server
 	sockfd = establish(host, PORT, header);
 
 	if (sockfd < 0) {
@@ -199,9 +234,6 @@ int http_get(char *url, char *response, char *flag) {
 	if (PRINTERR) {
 		fprintf(stderr, "Connected to %s\n", host);
 	}
-
-	free(host);
-	free(header);
 
 	// Get response header
 	bytes_read = read_response(sockfd, response, HEADER_BOUNDARY, HEADER_MODE);
@@ -218,52 +250,89 @@ int http_get(char *url, char *response, char *flag) {
 	// HTTP status code
 	status = get_status(response);
 
-	// Only accept the MIME-type defined by ACCEPT
-	// if (
-	// 		strnstr(
-	// 			get_content_type(response),
-	// 			ACCEPT,
-	// 			strstr(get_content_type(response), HEADER_BOUNDARY) - get_content_type(response)
-	// 		) == NULL) {
-	// 	return CONTENT_TYPE_NA;
-	// }
-	
-	// switch (status) {
+	// Pre-processing of status code
+	switch (status) {
 
-	// 	/*
-	// 	 * Permanent redirect. Equivalent to the original URL being for the same
-	// 	 * page as the new URL, so overrite the old URL and continue.
-	// 	 */
-	// 	case 301:
-	// 		get_location(url, response);
-	// 		close_socket(sockfd);
-	// 		return http_get(url, response, flag);
+		/* All good. */
+		case 200:
+			*flag = OK;
+			break;
 		
-	// 	default:
-	// 		break;
-	// }
+		/* New URL for this resource. Get new URL
+		   and re-attempt get. */
+		case 301:
+			*flag = REDIRECTED;
+
+			get_location(url, response);
+			close_socket(sockfd);
+
+			return http_get(url, response, flag);
+		
+		/* Authorisation required. Handled by
+			 http preprocessor. */
+		case 401:
+			*flag = PERMANENT_FAILURE;
+			return;
+		
+		/* Page not found, do not re-attempt
+		   but do return the response. */
+		case 404:
+			*flag = PERMANENT_FAILURE;
+			break;
+		
+		/* URI too long, do not re-attempt
+		   but do return the response. */
+		case 414:
+			*flag = PERMANENT_FAILURE;
+			break;
+		
+		/* Service unavailable, possibly overloaded
+		   or some other temporary failure. Reattempt
+			 get. */
+		case 503:
+			close_socket(sockfd);
+
+			return http_get(url, response, flag);
+		
+		/* Gateway timeout, possibly overloaded
+		   or some other temporary failure. Reattempt
+			 get. */
+		case 504:
+			close_socket(sockfd);
+
+			return http_get(url, response, flag);
+	}
+
+	// Only accept the MIME-type defined by ACCEPT
+	if (!is_content_type(response, ACCEPT)) {
+
+		*flag = CONTENT_TYPE_NA;
+		return status;
+	}
 
 	expected_length = get_content_length(response);
 
-	// Read content from server
+	// Reset buffer
 	memset(response, 0, MAX_RESPONSE_LENGTH);
+
+	// Read content
 	bytes_read = expected_length == CHUNKED ?
-							   get_chunked_response(sockfd, response, &expected_length) :
-							   read_response(sockfd, response, NULL, expected_length);
-	
-	if (PRINTERR) {
-		fprintf(stderr, "Expected length: %ld, bytes read: %ld\n", expected_length, bytes_read);
-	}
-
-	if (expected_length != bytes_read) {
-
-		if (PRINTERR) {
-			fprintf(stderr, "Truncated response.\n");
-		}
-		*flag = TRUNCATED;
-	}
+							 get_chunked_response(sockfd, response, &expected_length) :
+							 read_response(sockfd, response, NULL, expected_length);
 
 	close_socket(sockfd);
+
+	if (expected_length != bytes_read) {
+		if (*flag == TRUNCATED) {
+
+			// Twice truncated response, do not reattempt
+			return status;
+		} else {
+
+			// Truncated response, reattempt get
+			return http_get(url, response, flag);
+		}
+	}
 
 	return status;
 }

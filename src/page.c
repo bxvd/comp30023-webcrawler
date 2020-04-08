@@ -37,11 +37,9 @@ Page *get_page(char *url, Page *prev) {
  * Frees the memory used by a Page.
  * 
  * Page *page: Pointer to page to be destroyed.
- * int r:      Destroys children recursively if r doesn't evaluate to 0.
+ * int r:      Destroys children recursively if r evaluates to true.
  */
 void destroy_page(Page *page, int r) {
-
-	free(page->location);
 
 	if (page->prev) {
 		page->prev->next = page->next;
@@ -56,6 +54,7 @@ void destroy_page(Page *page, int r) {
 		}
 	}
 
+  free(page->location);
 	free(page);
 }
 

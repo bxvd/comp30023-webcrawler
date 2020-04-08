@@ -6,8 +6,11 @@
 #define PORT       80
 
 // Flags
-#define TRUNCATED       'T'
-#define CONTENT_TYPE_NA 'M'
+#define OK                'O'
+#define TRUNCATED         'T'
+#define REDIRECTED        'R'
+#define CONTENT_TYPE_NA   'M'
+#define PERMANENT_FAILURE 'X'
 
 #define PRINTERR 1
 

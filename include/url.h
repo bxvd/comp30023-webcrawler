@@ -1,4 +1,4 @@
-#define MAX_URL_LENGTH 1000
+#define MAX_URL_LENGTH 1024
 
 #define DEFAULT_PROTOCOL   "http"
 #define DEFAULT_PATH       "/"
