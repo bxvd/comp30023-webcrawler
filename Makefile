@@ -21,7 +21,7 @@ LIBO := attribute.o char_ref.o error.o parser.o string_buffer.o string_piece.o t
 				util.o vector.o
 
 # Objects
-OBJ := $(LIBO) crawler.o crawl.o http.o url.o client.o
+OBJ := $(LIBO) crawler.o crawl.o http.o url.o client.o page.o
 OBJ := $(OBJ:%=$(ODIR)/%)
 LIBO := $(LIBO:%=$(ODIR)/%)
 
@@ -33,7 +33,7 @@ EXE = crawler
 TEST1 = http://ibdhost.com/help/html/
 TEST2 = google.com
 TEST3 = https://webhook.site/a6e635ec-e82e-4ef8-b94c-20820b1d823e
-TEST4 = http://localhost/camel.html
+TEST4 = http://localhost/test-cases/basic/fully-connected-basic/bear/bird.html
 
 # Look in lib for extra header files
 vpath %.h $(LIBDIR)

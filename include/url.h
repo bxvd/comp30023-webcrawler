@@ -16,4 +16,6 @@ typedef struct URL {
 void get_protocol(char *url, char *protocol);
 void get_host(char *url, char *host);
 void get_path(char *url, char *path);
+void get_directory(char *url, char *directory);
 char *stringify_url(int n, char *path, ...);
+void sanitise(char *candidate, char *sender);
