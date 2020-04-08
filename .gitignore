@@ -2,8 +2,7 @@
 .vscode/
 .VSCodeCounter/
 obj/
-test-server/
 crawler
 *.pdf
 *.txt
-*.html
+/*.html
