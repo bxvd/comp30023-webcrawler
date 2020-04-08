@@ -272,7 +272,7 @@ int http_get(char *url, char *response, char *flag) {
 			 http preprocessor. */
 		case 401:
 			*flag = PERMANENT_FAILURE;
-			return;
+			break;
 		
 		/* Page not found, do not re-attempt
 		   but do return the response. */
