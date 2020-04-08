@@ -7,10 +7,9 @@ LDIR = ./lib
 ODIR = ./obj
 
 # Compiler
-CC = gcc
-CFLAGS = -Wall -Wextra -I$(IDIR) 
+CC = clang
 SANITISE = -fsanitize=address -g -O1
-S = $(SANITISE)
+CFLAGS = -Wall -Wextra -I$(IDIR) $(SANITISE)
 
 MKDIR = mkdir -p
 CP = cp -r -n
