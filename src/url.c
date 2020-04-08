@@ -39,13 +39,19 @@ void get_host(char *url, char *host) {
 	assert(url && host);
 
 	char *element_start = strstr(url, PROTOCOL_DELIMITER);
-	// URL begins with a protocol
-	element_start += element_start ? strlen(PROTOCOL_DELIMITER) : 0;
 
-	if (element_start == NULL && strstr(url, LOCATION_DELIMITER)) {
+	if (element_start) {
+
+		// URL begins with a protocol
+		element_start += strlen(PROTOCOL_DELIMITER);
+
+	} else if ((element_start = strstr(url, LOCATION_DELIMITER))) {
+
 		// URL begins with '//'
-		element_start = strstr(url, LOCATION_DELIMITER) + strlen(LOCATION_DELIMITER);
+		element_start += strlen(LOCATION_DELIMITER);
+
 	} else {
+
 		// URL begins with the hostname
 		element_start = url;
 	}
