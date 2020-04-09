@@ -12,6 +12,7 @@ SANITISE = -fsanitize=address -g -O1
 # Compiler
 CC = gcc
 CFLAGS = -Wall -Wextra -I$(IDIR)# $(SANITISE)
+# 45b8c0b5
 
 MKDIR = mkdir -p
 CP = cp -r -n

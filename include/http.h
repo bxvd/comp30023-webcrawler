@@ -14,7 +14,6 @@
 #define CONTENT_TYPE_NA   'M'
 #define PERMANENT_FAILURE 'X'
 
-
 #define PRINTERR 1
 
 int http_get(char *url, char *response, char *flag);

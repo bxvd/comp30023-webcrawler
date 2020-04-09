@@ -139,6 +139,8 @@ void find_links(GumboNode *node, Page *page) {
  */
 void parse(char *response, Page *page) {
 
+	fprintf(stderr, "\n%s\n", response);
+
 	GumboOutput *parsed_output = gumbo_parse(response);
 	find_links(parsed_output->root, page);
 	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
@@ -150,20 +152,8 @@ void crawl(char *url) {
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
 	Page *page, *head = get_page(url, NULL);
 
-	if (PRINTERR) {
-		fprintf(stderr, "Visiting %s\n", head->location);
-	} else {
-		fprintf(stdout, "%s\n", head->location);
-	}
-
-	head->status = http_get(head->location, response, &head->flag);
-
-	if (head->flag == OK) {
-		parse(response, head);
-	}
-
 	// Traverse and generate linked list
-	page = head->next;
+	page = head;
 	while (page) {
 
 		if (PRINTERR) {
@@ -193,30 +183,6 @@ void crawl(char *url) {
 
 		page = page->next;
 	}
-
-	// Re-attempt temporary errors
-	// page = head->next;
-	// while (page) {
-
-	// 	if (PRINTERR) {
-	// 		fprintf(stderr, "Visiting %s\n", page->location);
-	// 	} else {
-	// 		fprintf(stderr, "%s\n", page->location);
-	// 	}
-
-
-	// 	page->status = http_get(page->location, response, &page->flag);
-
-	// 	if (page->flag == OK) {
-
-	// 		parse(response, page);
-	// 		page = page->next;
-
-	// 		if (page) {
-	// 			destroy_page(page->prev, 0);
-	// 		}
-	// 	}
-	// }
 
 	destroy_page(head, RECURSIVE);
 
