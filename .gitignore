@@ -1,8 +1,8 @@
 .DS_Store
 .vscode/
 .VSCodeCounter/
-test-cases/
 obj/
+test-cases/
 crawler
 *.pdf
 *.txt

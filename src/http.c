@@ -247,16 +247,15 @@ int http_get(char *url, char *response, char *flag) {
 		   and re-attempt get. */
 		case 301:
 			*flag = REDIRECTED;
-
 			get_location(url, response);
 			close_socket(sockfd);
-
 			return http_get(url, response, flag);
 		
 		/* Authorisation required. Reattempt with
 		   authorisation header. */
 		case 401:
 			*flag = AUTH_REQUIRED;
+			close_socket(sockfd);
 			return http_get(url, response, flag);
 			break;
 		
@@ -283,7 +282,6 @@ int http_get(char *url, char *response, char *flag) {
 			 get. */
 		case 503:
 			close_socket(sockfd);
-
 			return http_get(url, response, flag);
 		
 		/* Gateway timeout, possibly overloaded
@@ -291,7 +289,6 @@ int http_get(char *url, char *response, char *flag) {
 			 get. */
 		case 504:
 			close_socket(sockfd);
-
 			return http_get(url, response, flag);
 	}
 

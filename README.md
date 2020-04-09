@@ -9,7 +9,7 @@ The goal is to have implemented the functionality of:
 4. Web crawling - *done*
 5. Content-type and trancated response checking - *done*
 6. Correctly respond to status codes 200, 404, 410, 414, 503, 504 - *done*
-7. Redirection and authentication - *Redirection done*
+7. Redirection and authentication - *done*
 
 ### Usage
 ```bash
