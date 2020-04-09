@@ -1,7 +1,7 @@
 /*
  * Source file: crawl.c
  * 
- * Handles and dispatches all crawl logic and most of the memory
+ * Handles and dispatches all crawl logic and memory
  * handling for the crawler program.
  * 
  * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
@@ -9,7 +9,6 @@
  * Acknowledgements:
  * * Function find_links is adapted from find_links.cc at https://github.com/google/gumbo-parser/tree/master/examples
  */
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -18,16 +17,8 @@
 #include "http.h"
 #include "page.h"
 
+// Libraries
 #include "gumbo.h"
-
-#define PATH_IGNORE_CHARS "?#%"
-#define RELATIVE_DIR      "./"
-
-#define MAX_RESPONSE_LENGTH 100000
-
-#define NO_LINKS  0
-#define RECURSIVE 1
-#define SINGLE    0
 
 /*
  * Function: ignore_link
@@ -96,28 +87,15 @@ void find_links(GumboNode *node, Page *page) {
 	GumboAttribute *href;
 	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
 
-		// if (PRINTERR) {
-		// 	fprintf(stderr, "href: %s\n", href->value);
-		// }
-
 		// Get elements of the href value to work with
 		char location[MAX_URL_LENGTH] = {0}, host[MAX_URL_LENGTH] = {0};
 		memmove(location, href->value, strlen(href->value));
 
 		sanitise(location, page->location);
 
-		// if (PRINTERR) {
-		// 		fprintf(stderr, "Sanitised: %s\n", location);
-		// 	}
-
 		get_host(page->location, host);
 
 		if (!ignore_link(location, host) && !exists(location, page)) {
-
-			if (PRINTERR) {
-				fprintf(stderr, "Adding: %s\n", location);
-			}
-
 			add_page(get_page(location, page));
 		}
 	}
@@ -139,14 +117,21 @@ void find_links(GumboNode *node, Page *page) {
  */
 void parse(char *response, Page *page) {
 
-	fprintf(stderr, "\n%s\n", response);
-
 	GumboOutput *parsed_output = gumbo_parse(response);
 	find_links(parsed_output->root, page);
 	gumbo_destroy_output(&kGumboDefaultOptions, parsed_output);
 }
 
-void crawl(char *url) {
+/*
+ * Function: crawl
+ * 
+ * Performs a HTTP GET crawl on a URL passed and outputs each link to stderr.
+ * 
+ * char *url: URL to begin crawl from.
+ * 
+ * Returns int: Error code.
+ */
+int crawl(char *url) {
 
 	// Setup memory
 	char *response = (char*)malloc(MAX_RESPONSE_LENGTH * sizeof(char));
@@ -156,13 +141,11 @@ void crawl(char *url) {
 	page = head;
 	while (page) {
 
-		if (PRINTERR) {
-			fprintf(stderr, "Visiting %s\n", page->location);
-		} else {
-			fprintf(stderr, "%s\n", page->location);
+		if ((page->status = http_get(page->location, response, &page->flag)) < 0) {
+			return page->status;
 		}
 
-		page->status = http_get(page->location, response, &page->flag);
+		fprintf(stdout, "%s\n", page->location);
 
 		// Flags used to categories the statuses and responses
 		switch (page->flag) {
@@ -184,7 +167,10 @@ void crawl(char *url) {
 		page = page->next;
 	}
 
-	destroy_page(head, RECURSIVE);
+	// Recursively free() the linked list
+	destroy_page(head, 1);
 
 	free(response);
+
+	return 0;
 }

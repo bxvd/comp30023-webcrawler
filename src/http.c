@@ -1,3 +1,11 @@
+/*
+ * Source file: http.c
+ * 
+ * Connects to and accesses web servers via HTTP GET.
+ * 
+ * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +24,6 @@
 
 // Memory allocations
 #define MAX_HEADER_LENGTH   4096
-#define MAX_RESPONSE_LENGTH 100000
 #define CHUNK_HEADER_LENGTH 10
 
 // Flags
@@ -101,10 +108,6 @@ void get_location(char *url, char *response) {
 	// Reset URL and use the new one
 	memset(url, 0, MAX_URL_LENGTH);
 	memmove(url, location, strstr(location, END_OF_LINE) - location);
-
-	if (PRINTERR) {
-		fprintf(stderr, "Redirect to: %s\n", url);
-	}
 }
 
 /*
@@ -159,10 +162,6 @@ long get_chunk_length(int sockfd) {
  */
 long get_chunked_response(int sockfd, char *response, long *expected_length) {
 
-	if (PRINTERR) {
-		fprintf(stderr, "Begin chunked transfer.\n");
-	}
-
 	long next_read, bytes_read = 0;
 	*expected_length = 0;
 
@@ -170,10 +169,6 @@ long get_chunked_response(int sockfd, char *response, long *expected_length) {
 	*expected_length += next_read;
 
 	while (next_read) {
-
-		if (PRINTERR) {
-			fprintf(stderr, "Get chunk size: %ld\n", next_read);
-		}
 
 		bytes_read += read_response(sockfd, response + bytes_read, END_OF_LINE, next_read + strlen(END_OF_LINE));
 
@@ -194,6 +189,7 @@ long get_chunked_response(int sockfd, char *response, long *expected_length) {
  * 
  * char *url:      URL string of server.
  * char *response: Pointer to the location of where to put the response.
+ * char *flag:     Flag for response handling (flags are defined in http.h).
  * 
  * Returns int: HTTP status code or error code.
  */
@@ -221,16 +217,6 @@ int http_get(char *url, char *response, char *flag) {
 		n += sprintf(header + n, "Authorization: %s%s", AUTH, END_OF_LINE);
 	}
 	sprintf(header + n, "%s%s", END_OF_LINE, END_OF_LINE);
-	// snprintf(
-	// 	header,
-	// 	MAX_HEADER_LENGTH,
-	// 	"GET %s %s\r\nHost: %s\r\nConnection: %s\r\nUser-Agent: %s\r\nAccept: %s\r\n\r\n",
-	// 	path, HTTP_VER, host, CONNECTION, USER_AGENT, ACCEPT
-	// );
-
-	if (PRINTERR) {
-		fprintf(stderr, "Request header:\n%s\n\n", header);
-	}
 
 	// Establish connection and send HTTP request to server
 	sockfd = establish(host, PORT, header);
@@ -239,20 +225,12 @@ int http_get(char *url, char *response, char *flag) {
 		return sockfd;
 	}
 
-	if (PRINTERR) {
-		fprintf(stderr, "Connected to %s\n", host);
-	}
-
 	// Get response header
 	bytes_read = read_response(sockfd, response, HEADER_BOUNDARY, HEADER_MODE);
 
 	if (bytes_read < 0) {
 		close_socket(sockfd);
 		return (int)bytes_read;
-	}
-
-	if (PRINTERR) {
-		fprintf(stderr, "Response header:\n%s\n\n", response);
 	}
 
 	// HTTP status code
@@ -285,6 +263,12 @@ int http_get(char *url, char *response, char *flag) {
 		/* Page not found, do not re-attempt
 		   but do return the response. */
 		case 404:
+			*flag = PERMANENT_FAILURE;
+			break;
+		
+		/* Page gone, do not re-attempt
+		   but do return the response. */
+		case 410:
 			*flag = PERMANENT_FAILURE;
 			break;
 		

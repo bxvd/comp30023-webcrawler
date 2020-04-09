@@ -1,3 +1,12 @@
+/*
+ * Source file: page.c
+ * 
+ * Provides functionality to a doubly linked list data
+ * structure of web pages.
+ * 
+ * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include "page.h"

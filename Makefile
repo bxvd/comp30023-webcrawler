@@ -11,11 +11,9 @@ SANITISE = -fsanitize=address -g -O1
 
 # Compiler
 CC = gcc
-CFLAGS = -Wall -Wextra -I$(IDIR)# $(SANITISE)
-# 45b8c0b5
+CFLAGS = -Wall -Wextra -I$(IDIR)
 
 MKDIR = mkdir -p
-CP = cp -r -n
 
 # Libraries
 LIB := gumbo/src
@@ -31,19 +29,12 @@ LIBO := $(LIBO:%=$(ODIR)/%)
 # Output
 EXE = crawler
 
-# Runtime args
-# Used for debugging
-TEST1 = http://localhost/test-cases/basic/fully-connected-basic/bear/bird.html
-
 # Look in lib for extra header files
 vpath %.h $(LIBDIR)
 
 .PHONY: all run clean tidy libs gumbo
 
 all: clean libs $(EXE)
-
-test1: all
-	@./$(EXE) $(TEST1)
 
 clean:
 	@rm -r -f $(ODIR) $(EXE)

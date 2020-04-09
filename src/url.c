@@ -1,3 +1,11 @@
+/*
+ * Source file: url.c
+ * 
+ * Provides URL handling functions.
+ * 
+ * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
+ */
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>

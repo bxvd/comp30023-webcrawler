@@ -1,7 +1,19 @@
+/*
+ * Source file: client.c
+ * 
+ * Provides functions for client-side network communication.
+ * 
+ * Author: bdaff@student.unimelb.edu.au (Brodie Daff)
+ * 
+ * Acknowledgements:
+ * * setup_socket is based on the lecture notes and workshop for COMP30023
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <strings.h>
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -66,12 +78,11 @@ void setup_socket(int *sockfd, struct hostent *addr, int port) {
  * int port:     Destination port number.
  * char *header: Request header.
  * 
- * Returns int*: Pointer to a socket file descriptor.
+ * Returns int: A socket file descriptor.
  */
 int establish(char *host, int port, char *header) {
 	
-	// Persistent sockfd to keep socket open
-	//int *sockfd = (int*)malloc(sizeof(int));
+	// Socket file descriptor
 	int sockfd = 0;
 
 	// Get IP address from host name
@@ -100,7 +111,7 @@ int establish(char *host, int port, char *header) {
  * 
  * Reads bytes from a server via sockets.
  * 
- * int *sockfd:         Socket file descriptor.
+ * int  sockfd:         Socket file descriptor.
  * char *response:      String to store the bytes read from the server.
  * char *boundary:      Stops reading bytes if it encounters a 'boundary' string until the function is called again.
  * long content_length: Maximum number of bytes to read from the server.
@@ -109,9 +120,12 @@ int establish(char *host, int port, char *header) {
  */
 long read_response(int sockfd, char *response, char *boundary, long content_length) {
 
+	assert(response);
+
 	/*
-	 * Function is in header mode when content_length = 1.
-	 * Reads one byte at a time until 'boundary' is encountered so as to precisely capture data.
+	 * Function is in header mode when content_length = 1 and reads one byte at a
+	 * time until 'boundary' is encountered, so as to precisely read parts of
+	 * the response as needed.
 	 */
 
 	// Set buffer length based on expected length
@@ -140,9 +154,10 @@ long read_response(int sockfd, char *response, char *boundary, long content_leng
 /*
  * Function: close_socket
  * 
- * int *sockfd: Socket file descriptor.
+ * Closes TCP connection.
+ * 
+ * int sockfd: Socket file descriptor.
  */
 void close_socket(int sockfd) {
 	close(sockfd);
-	//free(sockfd);
 }
