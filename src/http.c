@@ -53,8 +53,6 @@ char *get_value(char *response, const char *field) {
 	char l_response[MAX_RESPONSE_LENGTH] = {0};
 	strlower(l_response, response);
 
-	fprintf(stderr, "Finding %s in %s\n", field, l_response);
-
 	// Count how many bytes into the lowercase response that the field was found
 	return (response + (strstr(l_response, field) - l_response) + strlen(field));
 }
@@ -213,12 +211,22 @@ int http_get(char *url, char *response, char *flag) {
 	get_path(url, path);
 
 	// Generate request header
-	snprintf(
-		header,
-		MAX_HEADER_LENGTH,
-		"GET %s %s\r\nHost: %s\r\nConnection: %s\r\nUser-Agent: %s\r\nAccept: %s\r\n\r\n",
-		path, HTTP_VER, host, CONNECTION, USER_AGENT, ACCEPT
-	);
+	int n;
+	n = sprintf(header, "GET %s %s%s", path, HTTP_VER, END_OF_LINE);
+	n += sprintf(header + n, "Host: %s%s", host, END_OF_LINE);
+	n += sprintf(header + n, "Connection: %s%s", CONNECTION, END_OF_LINE);
+	n += sprintf(header + n, "User-Agent: %s%s", USER_AGENT, END_OF_LINE);
+	n += sprintf(header + n, "Accept: %s%s", ACCEPT, END_OF_LINE);
+	if (*flag == AUTH_REQUIRED) {
+		n += sprintf(header + n, "Authorization: %s%s", AUTH, END_OF_LINE);
+	}
+	sprintf(header + n, "%s%s", END_OF_LINE, END_OF_LINE);
+	// snprintf(
+	// 	header,
+	// 	MAX_HEADER_LENGTH,
+	// 	"GET %s %s\r\nHost: %s\r\nConnection: %s\r\nUser-Agent: %s\r\nAccept: %s\r\n\r\n",
+	// 	path, HTTP_VER, host, CONNECTION, USER_AGENT, ACCEPT
+	// );
 
 	if (PRINTERR) {
 		fprintf(stderr, "Request header:\n%s\n\n", header);
@@ -250,12 +258,11 @@ int http_get(char *url, char *response, char *flag) {
 	// HTTP status code
 	status = get_status(response);
 
-	// Pre-processing of status code
+	// Pre-handling of status code
 	switch (status) {
 
 		/* All good. */
 		case 200:
-			*flag = OK;
 			break;
 		
 		/* New URL for this resource. Get new URL
@@ -268,10 +275,11 @@ int http_get(char *url, char *response, char *flag) {
 
 			return http_get(url, response, flag);
 		
-		/* Authorisation required. Handled by
-			 http preprocessor. */
+		/* Authorisation required. Reattempt with
+		   authorisation header. */
 		case 401:
-			*flag = PERMANENT_FAILURE;
+			*flag = AUTH_REQUIRED;
+			return http_get(url, response, flag);
 			break;
 		
 		/* Page not found, do not re-attempt
@@ -333,6 +341,9 @@ int http_get(char *url, char *response, char *flag) {
 			return http_get(url, response, flag);
 		}
 	}
+
+	// Overrite TRUNCATED flag
+	*flag = (*flag == TRUNCATED) || !(*flag) ? OK : *flag;
 
 	return status;
 }

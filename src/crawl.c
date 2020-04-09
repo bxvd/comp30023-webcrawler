@@ -25,8 +25,6 @@
 
 #define MAX_RESPONSE_LENGTH 100000
 
-#define SUBMISSION 1
-
 #define NO_LINKS  0
 #define RECURSIVE 1
 #define SINGLE    0
@@ -98,9 +96,9 @@ void find_links(GumboNode *node, Page *page) {
 	GumboAttribute *href;
 	if (node->v.element.tag == GUMBO_TAG_A && (href = gumbo_get_attribute(&node->v.element.attributes, "href"))) {
 
-		if (PRINTERR) {
-			fprintf(stderr, "href: %s\n", href->value);
-		}
+		// if (PRINTERR) {
+		// 	fprintf(stderr, "href: %s\n", href->value);
+		// }
 
 		// Get elements of the href value to work with
 		char location[MAX_URL_LENGTH] = {0}, host[MAX_URL_LENGTH] = {0};
@@ -108,9 +106,9 @@ void find_links(GumboNode *node, Page *page) {
 
 		sanitise(location, page->location);
 
-		if (PRINTERR) {
-				fprintf(stderr, "Sanitised: %s\n", location);
-			}
+		// if (PRINTERR) {
+		// 		fprintf(stderr, "Sanitised: %s\n", location);
+		// 	}
 
 		get_host(page->location, host);
 
@@ -176,15 +174,24 @@ void crawl(char *url) {
 
 		page->status = http_get(page->location, response, &page->flag);
 
-		if (page->flag == OK) {
+		// Flags used to categories the statuses and responses
+		switch (page->flag) {
 
-			parse(response, page);
-			page = page->next;
-
-			if (page) {
-				destroy_page(page->prev, 0);
-			}
+			// Truncated AND rettempted, don't parse
+			case TRUNCATED:
+				break;
+			
+			// Not accepting this content type
+			case CONTENT_TYPE_NA:
+				break;
+			
+			// All other scenarios are accounted for within HTTP handler
+			default:
+				parse(response, page);
+				break;
 		}
+
+		page = page->next;
 	}
 
 	// Re-attempt temporary errors

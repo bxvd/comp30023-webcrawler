@@ -10,8 +10,8 @@ ODIR = ./obj
 SANITISE = -fsanitize=address -g -O1
 
 # Compiler
-CC = clang
-CFLAGS = -Wall -Wextra -I$(IDIR) $(SANITISE)
+CC = gcc
+CFLAGS = -Wall -Wextra -I$(IDIR)# $(SANITISE)
 
 MKDIR = mkdir -p
 CP = cp -r -n
